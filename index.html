@@ -1,174 +1,193 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>CRUD REST - Google Sheets</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 30px;
-    }
-
-    h2 {
-      margin-bottom: 10px;
-    }
-
-    .card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 6px;
-      max-width: 400px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-
-    input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
-    }
-
-    button {
-      padding: 8px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .btn-salvar {
-      background: #28a745;
-      color: white;
-      width: 100%;
-    }
-
-    table {
-      margin-top: 30px;
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
-    }
-
-    th {
-      background: #007bff;
-      color: white;
-    }
-
-    .btn-editar {
-      background: #ffc107;
-      margin-right: 5px;
-    }
-
-    .btn-excluir {
-      background: #dc3545;
-      color: white;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Recrutamento</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="container">
+    <div class="header">
+      <h1>Cadastro de Recrutamento</h1>
+      <button id="newBtn" class="btn-primary">Novo Cadastro</button>
+    </div>
 
-<h2>Cadastro</h2>
+    <div class="filters">
+      <div class="filter-group">
+        <label>Graduação</label>
+        <select id="filtroGraduacao">
+          <option value="">Todos</option>
+          <option value="cb_sd">CB PM e SD PM</option>
+          <option value="sgt_subten">SGT PM e SUBTEN PM</option>
+        </select>
+      </div>
 
-<div class="card">
-  <input type="hidden" id="id">
-  <input type="text" id="nome" placeholder="Nome">
-  <input type="number" id="idade" placeholder="Idade">
-  <button class="btn-salvar" onclick="salvar()">Salvar</button>
-</div>
+      <div class="filter-group">
+        <label>Etapa (Concluída)</label>
+        <select id="filtroEtapa">
+          <option value="">Todas</option>
+          <option value="psicologo">Psicológico</option>
+          <option value="p2">P/2</option>
+          <option value="tecnico">Técnico</option>
+        </select>
+      </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Idade</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody id="lista"></tbody>
-</table>
+      <div class="export-buttons">
+        <button id="exportPdfBtn" class="btn-export">📄 Salvar PDF</button>
+        <button id="exportEmailBtn" class="btn-export">✉️ Compartilhar Email</button>
+      </div>
+    </div>
 
-<script>
-  // 🔴 COLE A URL DA SUA API REST AQUI
-  const API_URL = "https://script.google.com/macros/s/AKfycbzFtLecR5pECI0VQme6W7yrQ3UibMrJkevQ0aaRkzKEVB4Jp3vZgQ7jFd8Ig7clHBpy/exec";
+    <div id="formModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="formTitle">Novo Cadastro</h2>
+          <span class="close">&times;</span>
+        </div>
+        <form id="cadastroForm">
+          <input type="hidden" id="editId">
+          
+          <div class="form-group">
+            <label>Graduação *</label>
+            <select id="graduacao" required>
+              <option value="">Selecione...</option>
+              <option value="SD PM">SD PM</option>
+              <option value="2º CL">2º CL</option>
+              <option value="3º CL">3º CL</option>
+              <option value="CB PM">CB PM</option>
+              <option value="1º SGT PM">1º SGT PM</option>
+              <option value="2º SGT PM">2º SGT PM</option>
+              <option value="3º SGT PM">3º SGT PM</option>
+              <option value="ST PM">ST PM</option>
+              <option value="SUBTENENTE PM">SUBTENENTE PM</option>
+            </select>
+          </div>
 
-  function carregar() {
-    fetch(API_URL)
-      .then(res => res.json())
-      .then(data => {
-        let html = "";
-        data.forEach(item => {
-          html += `
-            <tr>
-              <td>${item.nome}</td>
-              <td>${item.idade}</td>
-              <td>
-                <button class="btn-editar" onclick="editar('${item.id}','${item.nome}','${item.idade}')">Editar</button>
-                <button class="btn-excluir" onclick="excluir('${item.id}')">Excluir</button>
-              </td>
-            </tr>
-          `;
-        });
-        document.getElementById("lista").innerHTML = html;
-      });
-  }
+          <div class="form-row">
+            <div class="form-group">
+              <label>RE *</label>
+              <input type="text" id="re" required>
+            </div>
+            <div class="form-group">
+              <label>Dígito *</label>
+              <input type="text" id="digito" required maxlength="2">
+            </div>
+          </div>
 
-  function salvar() {
-    const id = document.getElementById("id").value;
-    const nome = document.getElementById("nome").value;
-    const idade = document.getElementById("idade").value;
+          <div class="form-group">
+            <label>Nome *</label>
+            <input type="text" id="nome" required>
+          </div>
 
-    if (!nome || !idade) {
-      alert("Preencha todos os campos");
-      return;
-    }
+          <div class="form-group">
+            <label>Telefone (DDD + Número) *</label>
+            <input type="tel" id="telefone" required maxlength="11" placeholder="11999999999">
+            <small>Apenas números, 11 dígitos</small>
+          </div>
 
-    const method = id ? "UPDATE" : "CREATE";
+          <div class="form-group">
+            <label>Unidade *</label>
+            <input type="text" id="unidade" required>
+          </div>
 
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method, id, nome, idade })
-    })
-    .then(res => res.json())
-    .then(() => {
-      limpar();
-      carregar();
-    });
-  }
+          <div class="section-title">Psicólogo</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Data</label>
+              <input type="date" id="psicologoData">
+            </div>
+            <div class="form-group">
+              <label>Resultado</label>
+              <select id="resultado">
+                <option value="aguardando">Aguardando</option>
+                <option value="favoravel">Favorável</option>
+                <option value="desfavoravel">Desfavorável</option>
+                <option value="nao_compareceu">Não Compareceu</option>
+              </select>
+            </div>
+          </div>
 
-  function editar(id, nome, idade) {
-    document.getElementById("id").value = id;
-    document.getElementById("nome").value = nome;
-    document.getElementById("idade").value = idade;
-  }
+          <div class="form-group">
+            <label>Validade</label>
+            <input type="text" id="validade" readonly>
+          </div>
 
-  function excluir(id) {
-    if (!confirm("Deseja excluir este registro?")) return;
+          <div class="section-title">P/2</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>MSG P/2</label>
+              <input type="text" id="msgP2">
+            </div>
+            <div class="form-group">
+              <label>Resultado P/2</label>
+              <select id="resultadoP2">
+                <option value="aguardando">Aguardando</option>
+                <option value="favoravel">Favorável</option>
+                <option value="desfavoravel">Desfavorável</option>
+              </select>
+            </div>
+          </div>
 
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method: "DELETE", id })
-    })
-    .then(res => res.json())
-    .then(() => carregar());
-  }
+          <div class="section-title">Técnico</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Data</label>
+              <input type="date" id="tecnicoData">
+            </div>
+            <div class="form-group">
+              <label>Resultado Técnico</label>
+              <select id="resultadoTecnico">
+                <option value="aguardando">Aguardando</option>
+                <option value="favoravel">Favorável</option>
+                <option value="desfavoravel">Desfavorável</option>
+                <option value="nao_compareceu">Não Compareceu</option>
+              </select>
+            </div>
+          </div>
 
-  function limpar() {
-    document.getElementById("id").value = "";
-    document.getElementById("nome").value = "";
-    document.getElementById("idade").value = "";
-  }
+          <div class="section-title">Movimentação</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Enc Movimentação</label>
+              <input type="text" id="encMovimentacao">
+            </div>
+            <div class="form-group">
+              <label>Data Movimentado</label>
+              <input type="date" id="movimentadoData">
+            </div>
+          </div>
 
-  carregar();
-</script>
+          <div class="form-actions">
+            <button type="button" id="cancelBtn" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
+    <div class="table-container">
+      <table id="cadastroTable">
+        <thead>
+          <tr>
+            <th>Graduação</th>
+            <th>RE</th>
+            <th>Psicólogo</th>
+            <th>P/2</th>
+            <th>Técnico</th>
+            <th>Movimentação</th>
+            <th class="actions-col"></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="10" class="loading">Carregando...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>
