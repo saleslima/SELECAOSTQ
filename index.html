@@ -97,72 +97,45 @@
     <tbody id="lista"></tbody>
   </table>
 
-  <script>
-    const url = "https://script.google.com/macros/s/AKfycbzFtLecR5pECI0VQme6W7yrQ3UibMrJkevQ0aaRkzKEVB4Jp3vZgQ7jFd8Ig7clHBpy/exec";
+ <script>
+  const url = "https://script.google.com/macros/s/AKfycbzFtLecR5pECI0VQme6W7yrQ3UibMrJkevQ0aaRkzKEVB4Jp3vZgQ7jFd8Ig7clHBpy/exec";
 
-    function carregar() {
-      fetch(url + "?action=read")
-        .then(res => res.json())
-        .then(data => {
-          let html = "";
-          data.forEach(item => {
-            html += `
-              <tr>
-                <td>${item.nome}</td>
-                <td>${item.idade}</td>
-                <td>
-                  <button class="btn-editar" onclick="editar('${item.id}', '${item.nome}', '${item.idade}')">Editar</button>
-                  <button class="btn-excluir" onclick="deletar('${item.id}')">Excluir</button>
-                </td>
-              </tr>
-            `;
-          });
-          document.getElementById("lista").innerHTML = html;
-        });
+  function salvar() {
+    const id = document.getElementById("id").value;
+    const nome = document.getElementById("nome").value;
+    const idade = document.getElementById("idade").value;
+
+    if (!nome || !idade) {
+      alert("Preencha todos os campos!");
+      return;
     }
 
-    function salvar() {
-      const id = document.getElementById("id").value;
-      const nome = document.getElementById("nome").value;
-      const idade = document.getElementById("idade").value;
+    const action = id ? "update" : "create";
 
-      if (!nome || !idade) {
-        alert("Preencha todos os campos!");
-        return;
-      }
+    const payload = {
+      action,
+      id,
+      nome,
+      idade
+    };
 
-      const action = id ? "update" : "create";
+    fetch(url, {
+      method: "POST",
+      mode: "no-cors", // 🔥 IMPORTANTE
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      limpar();
+      carregar();
+      alert("Salvo com sucesso!");
+    });
+  }
+</script>
 
-      fetch(url, {
-        method: "POST",
-        body: JSON.stringify({ action, id, nome, idade })
-      }).then(() => {
-        limpar();
-        carregar();
-      });
-    }
-
-    function editar(id, nome, idade) {
-      document.getElementById("id").value = id;
-      document.getElementById("nome").value = nome;
-      document.getElementById("idade").value = idade;
-    }
-
-    function deletar(id) {
-      if (!confirm("Deseja realmente excluir?")) return;
-
-      fetch(url + "?action=delete&id=" + id)
-        .then(() => carregar());
-    }
-
-    function limpar() {
-      document.getElementById("id").value = "";
-      document.getElementById("nome").value = "";
-      document.getElementById("idade").value = "";
-    }
-
-    carregar();
-  </script>
 
 </body>
 </html>
+
