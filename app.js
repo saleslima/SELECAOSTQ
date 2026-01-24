@@ -31,8 +31,25 @@ const filtroGraduacao = document.getElementById('filtroGraduacao');
 const filtroEtapa = document.getElementById('filtroEtapa');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 const exportEmailBtn = document.getElementById('exportEmailBtn');
+const darkModeBtn = document.getElementById('darkModeBtn');
 
 let todosOsCadastros = [];
+
+// Dark Mode Logic
+const isDarkMode = localStorage.getItem('darkMode') === 'true';
+if (isDarkMode) {
+  document.body.classList.add('dark-mode');
+  darkModeBtn.textContent = '☀️';
+} else {
+  darkModeBtn.textContent = '🌙';
+}
+
+darkModeBtn.addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+  const isDark = document.body.classList.contains('dark-mode');
+  localStorage.setItem('darkMode', isDark);
+  darkModeBtn.textContent = isDark ? '☀️' : '🌙';
+});
 
 // Validar telefone - apenas números
 telefoneInput.addEventListener('input', (e) => {
@@ -85,19 +102,19 @@ form.addEventListener('submit', async (e) => {
 
   const data = {
     graduacao: document.getElementById('graduacao').value,
-    re: document.getElementById('re').value,
-    digito: document.getElementById('digito').value,
-    nome: document.getElementById('nome').value,
+    re: document.getElementById('re').value.toUpperCase(),
+    digito: document.getElementById('digito').value.toUpperCase(),
+    nome: document.getElementById('nome').value.toUpperCase(),
     telefone: telefone,
-    unidade: document.getElementById('unidade').value,
+    unidade: document.getElementById('unidade').value.toUpperCase(),
     psicologoData: document.getElementById('psicologoData').value,
     resultado: document.getElementById('resultado').value || 'aguardando',
     validade: validadeInput.value,
-    msgP2: document.getElementById('msgP2').value,
+    msgP2: document.getElementById('msgP2').value.toUpperCase(),
     resultadoP2: document.getElementById('resultadoP2').value || 'aguardando',
     tecnicoData: document.getElementById('tecnicoData').value,
     resultadoTecnico: document.getElementById('resultadoTecnico').value || 'aguardando',
-    encMovimentacao: document.getElementById('encMovimentacao').value,
+    encMovimentacao: document.getElementById('encMovimentacao').value.toUpperCase(),
     movimentadoData: document.getElementById('movimentadoData').value,
     criadoEm: new Date().toISOString()
   };
@@ -196,6 +213,14 @@ function criarEtapaTecnico(cadastro) {
   return `<span class="${classe}">${simbolo}</span>`;
 }
 
+// Criar ícone de Encaminhado
+function criarEtapaEncaminhado(cadastro) {
+  const temEnc = !!cadastro.encMovimentacao;
+  const classe = temEnc ? 'stage completed' : 'stage';
+  const simbolo = temEnc ? '✓' : '○';
+  return `<span class="${classe}">${simbolo}</span>`;
+}
+
 // Criar ícone de movimentação
 function criarEtapaMovimentacao(cadastro) {
   const temData = !!cadastro.movimentadoData;
@@ -214,6 +239,10 @@ function etapaConcluida(cadastro, etapa) {
     return (cadastro.resultadoP2 || 'aguardando') === 'favoravel';
   } else if (etapa === 'tecnico') {
     return (cadastro.resultadoTecnico || 'aguardando') === 'favoravel';
+  } else if (etapa === 'encaminhado') {
+    return !!cadastro.encMovimentacao;
+  } else if (etapa === 'movimentado') {
+    return !!cadastro.movimentadoData;
   }
   return false;
 }
@@ -264,6 +293,7 @@ function renderizarTabela(cadastros) {
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
+      <td>${criarEtapaEncaminhado(cadastro)}</td>
       <td>${criarEtapaMovimentacao(cadastro)}</td>
       <td class="actions">
         <button class="btn-edit" onclick="editarCadastro('${cadastro.id}')">Editar</button>
@@ -382,6 +412,8 @@ exportPdfBtn.addEventListener('click', () => {
   if (filtroEtapa.value === 'psicologo') filtroTexto.push('Etapa Concluída: Psicológico');
   if (filtroEtapa.value === 'p2') filtroTexto.push('Etapa Concluída: P/2');
   if (filtroEtapa.value === 'tecnico') filtroTexto.push('Etapa Concluída: Técnico');
+  if (filtroEtapa.value === 'encaminhado') filtroTexto.push('Etapa Concluída: Encaminhado');
+  if (filtroEtapa.value === 'movimentado') filtroTexto.push('Etapa Concluída: Movimentado');
   
   if (filtroTexto.length > 0) {
     doc.text('Filtros: ' + filtroTexto.join(', '), 14, 22);
@@ -395,11 +427,12 @@ exportPdfBtn.addEventListener('click', () => {
     getStatusText(c, 'psicologo'),
     getStatusText(c, 'p2'),
     getStatusText(c, 'tecnico'),
+    c.encMovimentacao ? 'Sim' : 'Não',
     c.movimentadoData ? 'Sim' : 'Não'
   ]);
   
   autoTable(doc, {
-    head: [['Graduação', 'RE', 'Nome', 'Unidade', 'Psicológico', 'P/2', 'Técnico', 'Movimentado']],
+    head: [['Graduação', 'RE', 'Nome', 'Unidade', 'Psicológico', 'P/2', 'Técnico', 'Encaminhado', 'Movimentado']],
     body: tableData,
     startY: filtroTexto.length > 0 ? 28 : 22,
     styles: { fontSize: 8 },
@@ -426,6 +459,8 @@ exportEmailBtn.addEventListener('click', () => {
   if (filtroEtapa.value === 'psicologo') filtroTexto.push('Psicológico concluído');
   if (filtroEtapa.value === 'p2') filtroTexto.push('P/2 concluído');
   if (filtroEtapa.value === 'tecnico') filtroTexto.push('Técnico concluído');
+  if (filtroEtapa.value === 'encaminhado') filtroTexto.push('Encaminhado concluído');
+  if (filtroEtapa.value === 'movimentado') filtroTexto.push('Movimentado concluído');
   
   if (filtroTexto.length > 0) {
     corpo += 'Filtros aplicados: ' + filtroTexto.join(', ') + '\n\n';
@@ -443,6 +478,7 @@ exportEmailBtn.addEventListener('click', () => {
     corpo += `Psicológico: ${getStatusText(c, 'psicologo')}\n`;
     corpo += `P/2: ${getStatusText(c, 'p2')}\n`;
     corpo += `Técnico: ${getStatusText(c, 'tecnico')}\n`;
+    corpo += `Encaminhado: ${c.encMovimentacao ? 'Sim' : 'Não'}\n`;
     corpo += `Movimentado: ${c.movimentadoData ? 'Sim' : 'Não'}\n`;
     corpo += '\n---\n\n';
   });

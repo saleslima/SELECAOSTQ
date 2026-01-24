@@ -10,7 +10,10 @@
   <div class="container">
     <div class="header">
       <h1>Cadastro de Recrutamento</h1>
-      <button id="newBtn" class="btn-primary">Novo Cadastro</button>
+      <div class="header-actions">
+        <button id="darkModeBtn" class="btn-secondary" style="margin-right: 10px;">🌙</button>
+        <button id="newBtn" class="btn-primary">Novo Cadastro</button>
+      </div>
     </div>
 
     <div class="filters">
@@ -30,6 +33,8 @@
           <option value="psicologo">Psicológico</option>
           <option value="p2">P/2</option>
           <option value="tecnico">Técnico</option>
+          <option value="encaminhado">Encaminhado</option>
+          <option value="movimentado">Movimentado</option>
         </select>
       </div>
 
@@ -175,6 +180,7 @@
             <th>Psicólogo</th>
             <th>P/2</th>
             <th>Técnico</th>
+            <th>Encaminhado</th>
             <th>Movimentação</th>
             <th class="actions-col"></th>
           </tr>
