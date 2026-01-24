@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>CRUD Google Sheets</title>
+  <title>CRUD REST - Google Sheets</title>
 
   <style>
     body {
@@ -11,44 +11,43 @@
       padding: 30px;
     }
 
-    h2, h3 {
+    h2 {
       margin-bottom: 10px;
     }
 
-    .form {
+    .card {
       background: #fff;
       padding: 20px;
       border-radius: 6px;
       max-width: 400px;
-      margin-bottom: 30px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
     input {
       width: 100%;
       padding: 8px;
       margin-bottom: 10px;
-      box-sizing: border-box;
     }
 
     button {
-      padding: 8px 12px;
-      cursor: pointer;
+      padding: 8px;
       border: none;
       border-radius: 4px;
+      cursor: pointer;
     }
 
-    button.salvar {
+    .btn-salvar {
       background: #28a745;
       color: white;
       width: 100%;
     }
 
     table {
+      margin-top: 30px;
       width: 100%;
       border-collapse: collapse;
-      background: #fff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      background: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
 
     th, td {
@@ -75,30 +74,50 @@
 </head>
 <body>
 
-  <h2>Cadastro</h2>
+<h2>Cadastro</h2>
 
-  <div class="form">
-    <input type="hidden" id="id">
-    <input type="text" id="nome" placeholder="Nome">
-    <input type="number" id="idade" placeholder="Idade">
-    <button class="salvar" onclick="salvar()">Salvar</button>
-  </div>
+<div class="card">
+  <input type="hidden" id="id">
+  <input type="text" id="nome" placeholder="Nome">
+  <input type="number" id="idade" placeholder="Idade">
+  <button class="btn-salvar" onclick="salvar()">Salvar</button>
+</div>
 
-  <h3>Lista de Registros</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Idade</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody id="lista"></tbody>
+</table>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Nome</th>
-        <th>Idade</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody id="lista"></tbody>
-  </table>
+<script>
+  // 🔴 COLE A URL DA SUA API REST AQUI
+  const API_URL = "https://script.google.com/macros/s/AKfycbzFtLecR5pECI0VQme6W7yrQ3UibMrJkevQ0aaRkzKEVB4Jp3vZgQ7jFd8Ig7clHBpy/exec";
 
- <script>
-  const url = "https://script.google.com/macros/s/AKfycbzFtLecR5pECI0VQme6W7yrQ3UibMrJkevQ0aaRkzKEVB4Jp3vZgQ7jFd8Ig7clHBpy/exec";
+  function carregar() {
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        let html = "";
+        data.forEach(item => {
+          html += `
+            <tr>
+              <td>${item.nome}</td>
+              <td>${item.idade}</td>
+              <td>
+                <button class="btn-editar" onclick="editar('${item.id}','${item.nome}','${item.idade}')">Editar</button>
+                <button class="btn-excluir" onclick="excluir('${item.id}')">Excluir</button>
+              </td>
+            </tr>
+          `;
+        });
+        document.getElementById("lista").innerHTML = html;
+      });
+  }
 
   function salvar() {
     const id = document.getElementById("id").value;
@@ -106,36 +125,50 @@
     const idade = document.getElementById("idade").value;
 
     if (!nome || !idade) {
-      alert("Preencha todos os campos!");
+      alert("Preencha todos os campos");
       return;
     }
 
-    const action = id ? "update" : "create";
+    const method = id ? "UPDATE" : "CREATE";
 
-    const payload = {
-      action,
-      id,
-      nome,
-      idade
-    };
-
-    fetch(url, {
+    fetch(API_URL, {
       method: "POST",
-      mode: "no-cors", // 🔥 IMPORTANTE
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(payload)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method, id, nome, idade })
     })
+    .then(res => res.json())
     .then(() => {
       limpar();
       carregar();
-      alert("Salvo com sucesso!");
     });
   }
-</script>
 
+  function editar(id, nome, idade) {
+    document.getElementById("id").value = id;
+    document.getElementById("nome").value = nome;
+    document.getElementById("idade").value = idade;
+  }
+
+  function excluir(id) {
+    if (!confirm("Deseja excluir este registro?")) return;
+
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method: "DELETE", id })
+    })
+    .then(res => res.json())
+    .then(() => carregar());
+  }
+
+  function limpar() {
+    document.getElementById("id").value = "";
+    document.getElementById("nome").value = "";
+    document.getElementById("idade").value = "";
+  }
+
+  carregar();
+</script>
 
 </body>
 </html>
-
