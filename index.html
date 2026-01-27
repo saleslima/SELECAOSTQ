@@ -9,8 +9,11 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>Cadastro de Recrutamento</h1>
+      <h1 class="animated-title">SEÇÃO DE QUALIDADE E TREINAMENTO ⚡</h1>
       <div class="header-actions">
+        <div id="totalCadastros" class="total-badge">
+          Total: <span id="totalCount">0</span>
+        </div>
         <button id="darkModeBtn" class="btn-secondary" style="margin-right: 10px;">🌙</button>
         <button id="newBtn" class="btn-primary">Novo Cadastro</button>
       </div>
@@ -30,6 +33,7 @@
         <label>Etapa (Concluída)</label>
         <select id="filtroEtapa">
           <option value="">Todas</option>
+          <option value="sem_etapas">Sem Etapas Preenchidas</option>
           <option value="psicologo">Psicológico</option>
           <option value="p2">P/2</option>
           <option value="tecnico">Técnico</option>
@@ -96,6 +100,7 @@
             <input type="text" id="unidade" required>
           </div>
 
+          <div id="stageSections">
           <div class="section-title">Psicólogo</div>
           <div class="form-row">
             <div class="form-group">
@@ -163,6 +168,8 @@
             </div>
           </div>
 
+          </div>
+
           <div class="form-actions">
             <button type="button" id="cancelBtn" class="btn-secondary">Cancelar</button>
             <button type="submit" class="btn-primary">Salvar</button>
@@ -191,6 +198,59 @@
           </tr>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <div id="statsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Estatísticas por Etapa</h2>
+        <span class="close-stats">&times;</span>
+      </div>
+      <div class="stats-content">
+        <div class="stat-item">
+          <div class="stat-label">Psicológico Concluído</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statPsicologo"></div>
+          </div>
+          <div class="stat-value" id="statPsicologoValue">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">P/2 Concluído</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statP2"></div>
+          </div>
+          <div class="stat-value" id="statP2Value">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Técnico Concluído</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statTecnico"></div>
+          </div>
+          <div class="stat-value" id="statTecnicoValue">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Encaminhado</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statEncaminhado"></div>
+          </div>
+          <div class="stat-value" id="statEncaminhadoValue">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Movimentado</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statMovimentado"></div>
+          </div>
+          <div class="stat-value" id="statMovimentadoValue">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Sem Etapas Preenchidas</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statSemEtapas"></div>
+          </div>
+          <div class="stat-value" id="statSemEtapasValue">0</div>
+        </div>
+      </div>
     </div>
   </div>
 

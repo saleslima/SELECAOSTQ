@@ -32,6 +32,11 @@ const filtroEtapa = document.getElementById('filtroEtapa');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 const exportEmailBtn = document.getElementById('exportEmailBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
+const totalCountEl = document.getElementById('totalCount');
+const totalBadge = document.getElementById('totalCadastros');
+const statsModal = document.getElementById('statsModal');
+const closeStatsBtn = document.querySelector('.close-stats');
+const stageSections = document.getElementById('stageSections');
 
 let todosOsCadastros = [];
 
@@ -72,12 +77,46 @@ newBtn.addEventListener('click', () => {
   formTitle.textContent = 'Novo Cadastro';
   form.reset();
   document.getElementById('editId').value = '';
+  stageSections.style.display = 'none'; // Hide stages for new registration
   modal.style.display = 'block';
 });
+
+// Update field states based on sequential logic
+function updateFieldStates() {
+  const psicologoData = document.getElementById('psicologoData').value;
+  const resultado = document.getElementById('resultado').value;
+  const msgP2 = document.getElementById('msgP2').value;
+  const resultadoP2 = document.getElementById('resultadoP2').value;
+  const tecnicoData = document.getElementById('tecnicoData').value;
+  const resultadoTecnico = document.getElementById('resultadoTecnico').value;
+  const encMovimentacao = document.getElementById('encMovimentacao').value;
+
+  // P/2 fields enabled only if psicólogo has data and resultado
+  const p2Enabled = psicologoData && resultado && resultado !== 'aguardando';
+  document.getElementById('msgP2').disabled = !p2Enabled;
+  document.getElementById('resultadoP2').disabled = !p2Enabled;
+
+  // Técnico fields enabled only if P/2 has msg and resultado
+  const tecnicoEnabled = p2Enabled && msgP2 && resultadoP2 && resultadoP2 !== 'aguardando';
+  document.getElementById('tecnicoData').disabled = !tecnicoEnabled;
+  document.getElementById('resultadoTecnico').disabled = !tecnicoEnabled;
+
+  // Encaminhado enabled only if técnico has data and resultado
+  const encEnabled = tecnicoEnabled && tecnicoData && resultadoTecnico && resultadoTecnico !== 'aguardando';
+  document.getElementById('encMovimentacao').disabled = !encEnabled;
+
+  // Movimentação enabled only if encaminhado is filled
+  const movEnabled = encEnabled && encMovimentacao;
+  document.getElementById('movimentadoData').disabled = !movEnabled;
+}
 
 // Fechar modal
 closeBtn.addEventListener('click', () => {
   modal.style.display = 'none';
+});
+
+closeStatsBtn.addEventListener('click', () => {
+  statsModal.style.display = 'none';
 });
 
 cancelBtn.addEventListener('click', () => {
@@ -88,7 +127,55 @@ window.addEventListener('click', (e) => {
   if (e.target === modal) {
     modal.style.display = 'none';
   }
+  if (e.target === statsModal) {
+    statsModal.style.display = 'none';
+  }
 });
+
+// Show stats on total badge click
+totalBadge.addEventListener('click', () => {
+  updateStats();
+  statsModal.style.display = 'block';
+});
+
+// Update stats
+function updateStats() {
+  const total = todosOsCadastros.length;
+  
+  const psicologoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'psicologo')).length;
+  const p2Concluido = todosOsCadastros.filter(c => etapaConcluida(c, 'p2')).length;
+  const tecnicoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'tecnico')).length;
+  const encaminhadoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'encaminhado')).length;
+  const movimentadoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'movimentado')).length;
+  const semEtapas = todosOsCadastros.filter(c => semEtapasPreenchidas(c)).length;
+
+  document.getElementById('statPsicologo').style.width = total > 0 ? `${(psicologoConcluido / total) * 100}%` : '0%';
+  document.getElementById('statPsicologoValue').textContent = `${psicologoConcluido} de ${total}`;
+  
+  document.getElementById('statP2').style.width = total > 0 ? `${(p2Concluido / total) * 100}%` : '0%';
+  document.getElementById('statP2Value').textContent = `${p2Concluido} de ${total}`;
+  
+  document.getElementById('statTecnico').style.width = total > 0 ? `${(tecnicoConcluido / total) * 100}%` : '0%';
+  document.getElementById('statTecnicoValue').textContent = `${tecnicoConcluido} de ${total}`;
+  
+  document.getElementById('statEncaminhado').style.width = total > 0 ? `${(encaminhadoConcluido / total) * 100}%` : '0%';
+  document.getElementById('statEncaminhadoValue').textContent = `${encaminhadoConcluido} de ${total}`;
+  
+  document.getElementById('statMovimentado').style.width = total > 0 ? `${(movimentadoConcluido / total) * 100}%` : '0%';
+  document.getElementById('statMovimentadoValue').textContent = `${movimentadoConcluido} de ${total}`;
+  
+  document.getElementById('statSemEtapas').style.width = total > 0 ? `${(semEtapas / total) * 100}%` : '0%';
+  document.getElementById('statSemEtapasValue').textContent = `${semEtapas} de ${total}`;
+}
+
+// Add listeners to form fields for sequential enabling
+document.getElementById('psicologoData').addEventListener('change', updateFieldStates);
+document.getElementById('resultado').addEventListener('change', updateFieldStates);
+document.getElementById('msgP2').addEventListener('input', updateFieldStates);
+document.getElementById('resultadoP2').addEventListener('change', updateFieldStates);
+document.getElementById('tecnicoData').addEventListener('change', updateFieldStates);
+document.getElementById('resultadoTecnico').addEventListener('change', updateFieldStates);
+document.getElementById('encMovimentacao').addEventListener('input', updateFieldStates);
 
 // Submeter formulário
 form.addEventListener('submit', async (e) => {
@@ -229,6 +316,15 @@ function criarEtapaMovimentacao(cadastro) {
   return `<span class="${classe}">${simbolo}</span>`;
 }
 
+// Check if no stages are filled
+function semEtapasPreenchidas(cadastro) {
+  return !cadastro.psicologoData && 
+         !cadastro.msgP2 && 
+         !cadastro.tecnicoData && 
+         !cadastro.encMovimentacao && 
+         !cadastro.movimentadoData;
+}
+
 // Verificar se etapa está concluída (verde)
 function etapaConcluida(cadastro, etapa) {
   if (etapa === 'psicologo') {
@@ -268,7 +364,9 @@ function filtrarCadastros(cadastros) {
     }
     
     // Filtro de etapa
-    if (filtroEt && !etapaConcluida(cadastro, filtroEt)) {
+    if (filtroEt === 'sem_etapas') {
+      return semEtapasPreenchidas(cadastro);
+    } else if (filtroEt && !etapaConcluida(cadastro, filtroEt)) {
       return false;
     }
     
@@ -317,6 +415,7 @@ onValue(cadastrosRef, (snapshot) => {
   if (!snapshot.exists()) {
     tableBody.innerHTML = '<tr><td colspan="10" class="no-data">Nenhum cadastro encontrado</td></tr>';
     todosOsCadastros = [];
+    totalCountEl.textContent = '0';
     return;
   }
 
@@ -328,6 +427,7 @@ onValue(cadastrosRef, (snapshot) => {
     });
   });
 
+  totalCountEl.textContent = todosOsCadastros.length;
   const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
   renderizarTabela(cadastrosFiltrados);
 });
@@ -372,6 +472,9 @@ window.editarCadastro = (id) => {
       document.getElementById('resultadoTecnico').value = cadastro.resultadoTecnico || '';
       document.getElementById('encMovimentacao').value = cadastro.encMovimentacao || '';
       document.getElementById('movimentadoData').value = cadastro.movimentadoData || '';
+      
+      stageSections.style.display = 'block'; // Show stages for editing
+      updateFieldStates(); // Enable/disable fields based on sequential logic
       modal.style.display = 'block';
     }
   }, { onlyOnce: true });
