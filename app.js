@@ -451,7 +451,7 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 30px; height: 30px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
@@ -606,7 +606,6 @@ onValue(cadastrosRef, (snapshot) => {
     tableBody.innerHTML = '<tr><td colspan="10" class="no-data">Nenhum cadastro encontrado</td></tr>';
     todosOsCadastros = [];
     totalCountEl.textContent = '0';
-    renderizarRecentes();
     atualizarGraficos();
     return;
   }
@@ -705,42 +704,49 @@ exportPdfBtn.addEventListener('click', () => {
 
   const doc = new jsPDF();
   
-  doc.setFontSize(16);
-  doc.text('Relatório de Recrutamento', 14, 15);
-  
-  doc.setFontSize(10);
-  const filtroTexto = [];
-  if (filtroGraduacao.value === 'cb_sd') filtroTexto.push('Graduação: CB PM e SD PM');
-  if (filtroGraduacao.value === 'sgt_subten') filtroTexto.push('Graduação: SGT PM e SUBTEN PM');
-  if (filtroEtapa.value === 'psicologo') filtroTexto.push('Etapa Concluída: Psicológico');
-  if (filtroEtapa.value === 'p2') filtroTexto.push('Etapa Concluída: P/2');
-  if (filtroEtapa.value === 'tecnico') filtroTexto.push('Etapa Concluída: Técnico');
-  if (filtroEtapa.value === 'encaminhado') filtroTexto.push('Etapa Concluída: Encaminhado');
-  if (filtroEtapa.value === 'movimentado') filtroTexto.push('Etapa Concluída: Movimentado');
-  
-  if (filtroTexto.length > 0) {
-    doc.text('Filtros: ' + filtroTexto.join(', '), 14, 22);
+  // Determinar nome do filtro para cabeçalho
+  let filtroNome = 'TODOS OS REGISTROS';
+  if (filtroGraduacao.value === 'cb_sd') {
+    filtroNome = 'CB PM E SD PM';
+  } else if (filtroGraduacao.value === 'sgt_subten') {
+    filtroNome = 'SGT PM E SUBTEN PM';
   }
   
-  const tableData = cadastrosFiltrados.map(c => [
-    c.graduacao,
-    `${c.re}-${c.digito}`,
-    c.nome,
-    c.email,
-    formatarTelefone(c.whatsapp || c.telefone),
-    c.unidade,
-    getStatusText(c, 'psicologo'),
-    getStatusText(c, 'p2'),
-    getStatusText(c, 'tecnico'),
-    c.encMovimentacao ? 'Sim' : 'Não',
-    c.movimentadoData ? 'Sim' : 'Não'
-  ]);
+  if (filtroEtapa.value === 'sem_etapas') {
+    filtroNome += ' - SEM ETAPAS PREENCHIDAS';
+  } else if (filtroEtapa.value === 'reprovados') {
+    filtroNome += ' - REPROVADOS';
+  } else if (filtroEtapa.value === 'psicologo') {
+    filtroNome += ' - PSICOLÓGICO CONCLUÍDO';
+  } else if (filtroEtapa.value === 'p2') {
+    filtroNome += ' - P/2 CONCLUÍDO';
+  } else if (filtroEtapa.value === 'tecnico') {
+    filtroNome += ' - TÉCNICO CONCLUÍDO';
+  } else if (filtroEtapa.value === 'encaminhado') {
+    filtroNome += ' - ENCAMINHADO';
+  } else if (filtroEtapa.value === 'movimentado') {
+    filtroNome += ' - MOVIMENTADO';
+  }
+  
+  doc.setFontSize(14);
+  doc.text(filtroNome, 14, 15);
+  
+  const tableData = cadastrosFiltrados.map(c => {
+    const emailTruncado = c.email ? c.email.split('@')[0] : '';
+    return [
+      c.graduacao,
+      c.nome,
+      emailTruncado,
+      formatarTelefone(c.whatsapp || c.telefone),
+      c.unidade
+    ];
+  });
   
   autoTable(doc, {
-    head: [['Graduação', 'RE', 'Nome', 'Email', 'WhatsApp', 'Unidade', 'Psicológico', 'P/2', 'Técnico', 'Encaminhado', 'Movimentado']],
+    head: [['Graduação', 'Nome', 'Email', 'WhatsApp', 'Unidade']],
     body: tableData,
-    startY: filtroTexto.length > 0 ? 28 : 22,
-    styles: { fontSize: 8 },
+    startY: 22,
+    styles: { fontSize: 9 },
     headStyles: { fillColor: [0, 0, 0] }
   });
   
