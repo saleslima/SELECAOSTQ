@@ -92,9 +92,20 @@
           </div>
 
           <div class="form-group">
-            <label>Telefone (DDD + Número) *</label>
-            <input type="tel" id="telefone" required maxlength="11" placeholder="11999999999">
+            <label>Email *</label>
+            <input type="email" id="email" required>
+          </div>
+
+          <div class="form-group">
+            <label>WhatsApp (DDD + Número) *</label>
+            <input type="tel" id="whatsapp" required maxlength="11" placeholder="11999999999">
             <small>Apenas números, 11 dígitos</small>
+          </div>
+
+          <div class="form-group">
+            <label>Fone Fixo (DDD + Número)</label>
+            <input type="tel" id="foneFixo" maxlength="10" placeholder="1133334444">
+            <small>Apenas números, 10 dígitos (opcional)</small>
           </div>
 
           <div class="form-group">
@@ -186,6 +197,8 @@
           <tr>
             <th>Graduação</th>
             <th>RE</th>
+            <th>Nome</th>
+            <th>WhatsApp</th>
             <th>Psicólogo</th>
             <th>P/2</th>
             <th>Técnico</th>
@@ -203,6 +216,28 @@
     </div>
 
     <div class="stage-charts">
+      <div class="chart-item">
+        <div class="glass-container">
+          <div class="glass">
+            <div class="liquid" id="liquidSemEtapas"></div>
+            <div class="percentage" id="percentSemEtapas">0%</div>
+          </div>
+        </div>
+        <div class="chart-label">Sem Etapas</div>
+        <canvas id="chartSemEtapas" width="120" height="120"></canvas>
+      </div>
+
+      <div class="chart-item">
+        <div class="glass-container">
+          <div class="glass">
+            <div class="liquid" id="liquidReprovados"></div>
+            <div class="percentage" id="percentReprovados">0%</div>
+          </div>
+        </div>
+        <div class="chart-label">Reprovados</div>
+        <canvas id="chartReprovados" width="120" height="120"></canvas>
+      </div>
+      
       <div class="chart-item">
         <div class="glass-container">
           <div class="glass">
@@ -268,6 +303,20 @@
       </div>
       <div class="stats-content">
         <div class="stat-item">
+          <div class="stat-label">Sem Etapas Preenchidas</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statSemEtapas"></div>
+          </div>
+          <div class="stat-value" id="statSemEtapasValue">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Reprovados</div>
+          <div class="stat-bar">
+            <div class="stat-fill" id="statReprovados"></div>
+          </div>
+          <div class="stat-value" id="statReprovadosValue">0</div>
+        </div>
+        <div class="stat-item">
           <div class="stat-label">Psicológico Concluído</div>
           <div class="stat-bar">
             <div class="stat-fill" id="statPsicologo"></div>
@@ -301,13 +350,6 @@
             <div class="stat-fill" id="statMovimentado"></div>
           </div>
           <div class="stat-value" id="statMovimentadoValue">0</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">Sem Etapas Preenchidas</div>
-          <div class="stat-bar">
-            <div class="stat-fill" id="statSemEtapas"></div>
-          </div>
-          <div class="stat-value" id="statSemEtapasValue">0</div>
         </div>
       </div>
     </div>

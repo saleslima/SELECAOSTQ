@@ -26,7 +26,8 @@ const tableBody = document.getElementById('tableBody');
 const formTitle = document.getElementById('formTitle');
 const psicologoDataInput = document.getElementById('psicologoData');
 const validadeInput = document.getElementById('validade');
-const telefoneInput = document.getElementById('telefone');
+const whatsappInput = document.getElementById('whatsapp');
+const foneFixoInput = document.getElementById('foneFixo');
 const filtroGraduacao = document.getElementById('filtroGraduacao');
 const filtroEtapa = document.getElementById('filtroEtapa');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
@@ -57,8 +58,12 @@ darkModeBtn.addEventListener('click', () => {
   darkModeBtn.textContent = isDark ? '☀️' : '🌙';
 });
 
-// Validar telefone - apenas números
-telefoneInput.addEventListener('input', (e) => {
+// Validar whatsapp e fone fixo - apenas números
+whatsappInput.addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+foneFixoInput.addEventListener('input', (e) => {
   e.target.value = e.target.value.replace(/\D/g, '');
 });
 
@@ -143,12 +148,19 @@ totalBadge.addEventListener('click', () => {
 function updateStats() {
   const total = todosOsCadastros.length;
   
-  const psicologoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'psicologo')).length;
-  const p2Concluido = todosOsCadastros.filter(c => etapaConcluida(c, 'p2')).length;
-  const tecnicoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'tecnico')).length;
-  const encaminhadoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'encaminhado')).length;
-  const movimentadoConcluido = todosOsCadastros.filter(c => etapaConcluida(c, 'movimentado')).length;
-  const semEtapas = todosOsCadastros.filter(c => semEtapasPreenchidas(c)).length;
+  const semEtapas = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === null && !temReprovacao(c)).length;
+  const reprovados = todosOsCadastros.filter(c => temReprovacao(c)).length;
+  const psicologoConcluido = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === 'psicologo').length;
+  const p2Concluido = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === 'p2').length;
+  const tecnicoConcluido = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === 'tecnico').length;
+  const encaminhadoConcluido = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === 'encaminhado').length;
+  const movimentadoConcluido = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === 'movimentado').length;
+
+  document.getElementById('statSemEtapas').style.width = total > 0 ? `${(semEtapas / total) * 100}%` : '0%';
+  document.getElementById('statSemEtapasValue').textContent = `${semEtapas} de ${total}`;
+  
+  document.getElementById('statReprovados').style.width = total > 0 ? `${(reprovados / total) * 100}%` : '0%';
+  document.getElementById('statReprovadosValue').textContent = `${reprovados} de ${total}`;
 
   document.getElementById('statPsicologo').style.width = total > 0 ? `${(psicologoConcluido / total) * 100}%` : '0%';
   document.getElementById('statPsicologoValue').textContent = `${psicologoConcluido} de ${total}`;
@@ -164,9 +176,13 @@ function updateStats() {
   
   document.getElementById('statMovimentado').style.width = total > 0 ? `${(movimentadoConcluido / total) * 100}%` : '0%';
   document.getElementById('statMovimentadoValue').textContent = `${movimentadoConcluido} de ${total}`;
-  
-  document.getElementById('statSemEtapas').style.width = total > 0 ? `${(semEtapas / total) * 100}%` : '0%';
-  document.getElementById('statSemEtapasValue').textContent = `${semEtapas} de ${total}`;
+}
+
+// Helper function to check if record has any rejection
+function temReprovacao(cadastro) {
+  return etapaReprovada(cadastro, 'psicologo') || 
+         etapaReprovada(cadastro, 'p2') || 
+         etapaReprovada(cadastro, 'tecnico');
 }
 
 // Add listeners to form fields for sequential enabling
@@ -182,9 +198,15 @@ document.getElementById('encMovimentacao').addEventListener('input', updateField
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  const telefone = document.getElementById('telefone').value;
-  if (telefone.length !== 11) {
-    alert('O telefone deve ter exatamente 11 dígitos');
+  const whatsapp = document.getElementById('whatsapp').value;
+  if (whatsapp.length !== 11) {
+    alert('O WhatsApp deve ter exatamente 11 dígitos');
+    return;
+  }
+
+  const foneFixo = document.getElementById('foneFixo').value;
+  if (foneFixo && foneFixo.length !== 10) {
+    alert('O Fone Fixo deve ter exatamente 10 dígitos');
     return;
   }
 
@@ -193,7 +215,9 @@ form.addEventListener('submit', async (e) => {
     re: document.getElementById('re').value.toUpperCase(),
     digito: document.getElementById('digito').value.toUpperCase(),
     nome: document.getElementById('nome').value.toUpperCase(),
-    telefone: telefone,
+    email: document.getElementById('email').value.toLowerCase(),
+    whatsapp: whatsapp,
+    foneFixo: foneFixo,
     unidade: document.getElementById('unidade').value.toUpperCase(),
     psicologoData: document.getElementById('psicologoData').value,
     resultado: document.getElementById('resultado').value || 'aguardando',
@@ -416,15 +440,18 @@ function renderizarTabela(cadastros) {
   tableBody.innerHTML = '';
   
   if (cadastros.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="10" class="no-data">Nenhum cadastro encontrado com os filtros selecionados</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="11" class="no-data">Nenhum cadastro encontrado com os filtros selecionados</td></tr>';
     return;
   }
 
   cadastros.forEach((cadastro) => {
+    const whatsappLink = cadastro.whatsapp ? `https://wa.me/55${cadastro.whatsapp}` : '#';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
+      <td>${cadastro.nome}</td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
@@ -451,11 +478,21 @@ function atualizarGraficos() {
   const total = todosOsCadastros.length;
   if (total === 0) return;
   
-  const etapas = ['psicologo', 'p2', 'tecnico', 'encaminhado', 'movimentado'];
+  const etapas = ['semEtapas', 'reprovados', 'psicologo', 'p2', 'tecnico', 'encaminhado', 'movimentado'];
   
   etapas.forEach(etapa => {
-    // Contar apenas registros cuja última etapa concluída é esta etapa específica
-    const concluidos = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === etapa).length;
+    let concluidos = 0;
+    
+    // Special handling for semEtapas and reprovados
+    if (etapa === 'semEtapas') {
+      concluidos = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === null && !temReprovacao(c)).length;
+    } else if (etapa === 'reprovados') {
+      concluidos = todosOsCadastros.filter(c => temReprovacao(c)).length;
+    } else {
+      // Contar apenas registros cuja última etapa concluída é esta etapa específica
+      concluidos = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === etapa).length;
+    }
+    
     const porcentagem = Math.round((concluidos / total) * 100);
     
     // Atualizar líquido
@@ -465,16 +502,43 @@ function atualizarGraficos() {
     if (liquidEl) liquidEl.style.height = `${porcentagem}%`;
     if (percentEl) percentEl.textContent = `${porcentagem}%`;
     
-    // Calcular breakdown por graduação - apenas para registros cuja última etapa é esta
-    const cbSd = todosOsCadastros.filter(c => {
-      const grad = c.graduacao.toUpperCase();
-      return (grad.includes('CB') || grad.includes('SD') || grad.includes('CL')) && ultimaEtapaConcluida(c) === etapa;
-    }).length;
+    // Calcular breakdown por graduação
+    let cbSd = 0;
+    let sgtSubten = 0;
     
-    const sgtSubten = todosOsCadastros.filter(c => {
-      const grad = c.graduacao.toUpperCase();
-      return (grad.includes('SGT') || grad.includes('SUBTEN')) && ultimaEtapaConcluida(c) === etapa;
-    }).length;
+    if (etapa === 'semEtapas') {
+      cbSd = todosOsCadastros.filter(c => {
+        const grad = c.graduacao.toUpperCase();
+        return (grad.includes('CB') || grad.includes('SD') || grad.includes('CL')) && 
+               ultimaEtapaConcluida(c) === null && !temReprovacao(c);
+      }).length;
+      
+      sgtSubten = todosOsCadastros.filter(c => {
+        const grad = c.graduacao.toUpperCase();
+        return (grad.includes('SGT') || grad.includes('SUBTEN')) && 
+               ultimaEtapaConcluida(c) === null && !temReprovacao(c);
+      }).length;
+    } else if (etapa === 'reprovados') {
+      cbSd = todosOsCadastros.filter(c => {
+        const grad = c.graduacao.toUpperCase();
+        return (grad.includes('CB') || grad.includes('SD') || grad.includes('CL')) && temReprovacao(c);
+      }).length;
+      
+      sgtSubten = todosOsCadastros.filter(c => {
+        const grad = c.graduacao.toUpperCase();
+        return (grad.includes('SGT') || grad.includes('SUBTEN')) && temReprovacao(c);
+      }).length;
+    } else {
+      cbSd = todosOsCadastros.filter(c => {
+        const grad = c.graduacao.toUpperCase();
+        return (grad.includes('CB') || grad.includes('SD') || grad.includes('CL')) && ultimaEtapaConcluida(c) === etapa;
+      }).length;
+      
+      sgtSubten = todosOsCadastros.filter(c => {
+        const grad = c.graduacao.toUpperCase();
+        return (grad.includes('SGT') || grad.includes('SUBTEN')) && ultimaEtapaConcluida(c) === etapa;
+      }).length;
+    }
     
     // Desenhar gráfico circular
     const canvas = document.getElementById(`chart${etapa.charAt(0).toUpperCase() + etapa.slice(1)}`);
@@ -574,8 +638,13 @@ filtroEtapa.addEventListener('change', () => {
 
 // Formatar telefone
 function formatarTelefone(telefone) {
-  if (!telefone || telefone.length !== 11) return telefone;
-  return `(${telefone.substring(0, 2)}) ${telefone.substring(2, 7)}-${telefone.substring(7)}`;
+  if (!telefone) return telefone;
+  if (telefone.length === 11) {
+    return `(${telefone.substring(0, 2)}) ${telefone.substring(2, 7)}-${telefone.substring(7)}`;
+  } else if (telefone.length === 10) {
+    return `(${telefone.substring(0, 2)}) ${telefone.substring(2, 6)}-${telefone.substring(6)}`;
+  }
+  return telefone;
 }
 
 // Editar
@@ -590,7 +659,9 @@ window.editarCadastro = (id) => {
       document.getElementById('re').value = cadastro.re;
       document.getElementById('digito').value = cadastro.digito;
       document.getElementById('nome').value = cadastro.nome;
-      document.getElementById('telefone').value = cadastro.telefone;
+      document.getElementById('email').value = cadastro.email || '';
+      document.getElementById('whatsapp').value = cadastro.whatsapp || cadastro.telefone || '';
+      document.getElementById('foneFixo').value = cadastro.foneFixo || '';
       document.getElementById('unidade').value = cadastro.unidade;
       document.getElementById('psicologoData').value = cadastro.psicologoData || '';
       document.getElementById('resultado').value = cadastro.resultado || '';
@@ -655,6 +726,8 @@ exportPdfBtn.addEventListener('click', () => {
     c.graduacao,
     `${c.re}-${c.digito}`,
     c.nome,
+    c.email,
+    formatarTelefone(c.whatsapp || c.telefone),
     c.unidade,
     getStatusText(c, 'psicologo'),
     getStatusText(c, 'p2'),
@@ -664,7 +737,7 @@ exportPdfBtn.addEventListener('click', () => {
   ]);
   
   autoTable(doc, {
-    head: [['Graduação', 'RE', 'Nome', 'Unidade', 'Psicológico', 'P/2', 'Técnico', 'Encaminhado', 'Movimentado']],
+    head: [['Graduação', 'RE', 'Nome', 'Email', 'WhatsApp', 'Unidade', 'Psicológico', 'P/2', 'Técnico', 'Encaminhado', 'Movimentado']],
     body: tableData,
     startY: filtroTexto.length > 0 ? 28 : 22,
     styles: { fontSize: 8 },
@@ -705,8 +778,10 @@ exportEmailBtn.addEventListener('click', () => {
     corpo += `Graduação: ${c.graduacao}\n`;
     corpo += `RE: ${c.re}-${c.digito}\n`;
     corpo += `Nome: ${c.nome}\n`;
+    corpo += `Email: ${c.email}\n`;
+    corpo += `WhatsApp: ${formatarTelefone(c.whatsapp || c.telefone)}\n`;
+    if (c.foneFixo) corpo += `Fone Fixo: ${formatarTelefone(c.foneFixo)}\n`;
     corpo += `Unidade: ${c.unidade}\n`;
-    corpo += `Telefone: ${formatarTelefone(c.telefone)}\n`;
     corpo += `Psicológico: ${getStatusText(c, 'psicologo')}\n`;
     corpo += `P/2: ${getStatusText(c, 'p2')}\n`;
     corpo += `Técnico: ${getStatusText(c, 'tecnico')}\n`;

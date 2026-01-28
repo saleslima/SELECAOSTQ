@@ -31,18 +31,28 @@ body {
     opacity: 1;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
   70% {
     font-size: 200px;
     opacity: 1;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  85% {
+    font-size: 100px;
+    opacity: 1;
+    top: 40%;
+    left: 60%;
+    transform: translate(-50%, -50%) rotate(15deg);
   }
   100% {
     font-size: 24px;
     opacity: 1;
-    top: 52px;
-    left: calc(50% + 310px);
-    transform: translate(0, -50%);
+    top: 50px;
+    left: 50%;
+    transform: translate(325px, -50%) rotate(0deg);
   }
 }
 
@@ -293,6 +303,7 @@ label {
 
 input[type="text"],
 input[type="tel"],
+input[type="email"],
 input[type="date"],
 select {
   width: 100%;
@@ -306,6 +317,7 @@ select {
 
 input[type="text"]:focus,
 input[type="tel"]:focus,
+input[type="email"]:focus,
 input[type="date"]:focus,
 select:focus {
   outline: none;
@@ -346,7 +358,7 @@ small {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   overflow-x: auto;
-  max-height: 420px;
+  max-height: 380px;
   overflow-y: auto;
 }
 
@@ -530,6 +542,7 @@ body.dark-mode label {
 
 body.dark-mode input[type="text"],
 body.dark-mode input[type="tel"],
+body.dark-mode input[type="email"],
 body.dark-mode input[type="date"],
 body.dark-mode select {
   background: #2d2d2d;
@@ -684,18 +697,28 @@ body.dark-mode .lightning-bolt {
       opacity: 1;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) rotate(0deg);
     }
     70% {
       font-size: 100px;
       opacity: 1;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    85% {
+      font-size: 60px;
+      opacity: 1;
+      top: 40%;
+      left: 60%;
+      transform: translate(-50%, -50%) rotate(15deg);
     }
     100% {
       font-size: 20px;
       opacity: 1;
-      top: 45px;
-      left: calc(50% + 150px);
-      transform: translate(0, -50%);
+      top: 43px;
+      left: 50%;
+      transform: translate(165px, -50%) rotate(0deg);
     }
   }
 }
@@ -809,4 +832,20 @@ body.dark-mode .stage-charts {
 body.dark-mode .glass {
   background: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.15));
   border-color: rgba(255,255,255,0.3);
+}
+
+.whatsapp-link {
+  color: #25D366;
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.whatsapp-link:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+body.dark-mode .whatsapp-link {
+  color: #25D366;
 }
