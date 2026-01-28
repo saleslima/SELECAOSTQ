@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="lightning-bolt">⚡</div>
   <div class="container">
     <div class="header">
       <h1 class="animated-title">SEÇÃO DE QUALIDADE E TREINAMENTO ⚡</h1>
@@ -34,6 +35,7 @@
         <select id="filtroEtapa">
           <option value="">Todas</option>
           <option value="sem_etapas">Sem Etapas Preenchidas</option>
+          <option value="reprovados">Reprovados</option>
           <option value="psicologo">Psicológico</option>
           <option value="p2">P/2</option>
           <option value="tecnico">Técnico</option>
@@ -198,6 +200,63 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="stage-charts">
+      <div class="chart-item">
+        <div class="glass-container">
+          <div class="glass">
+            <div class="liquid" id="liquidPsicologo"></div>
+            <div class="percentage" id="percentPsicologo">0%</div>
+          </div>
+        </div>
+        <div class="chart-label">Psicológico</div>
+        <canvas id="chartPsicologo" width="120" height="120"></canvas>
+      </div>
+      
+      <div class="chart-item">
+        <div class="glass-container">
+          <div class="glass">
+            <div class="liquid" id="liquidP2"></div>
+            <div class="percentage" id="percentP2">0%</div>
+          </div>
+        </div>
+        <div class="chart-label">P/2</div>
+        <canvas id="chartP2" width="120" height="120"></canvas>
+      </div>
+      
+      <div class="chart-item">
+        <div class="glass-container">
+          <div class="glass">
+            <div class="liquid" id="liquidTecnico"></div>
+            <div class="percentage" id="percentTecnico">0%</div>
+          </div>
+        </div>
+        <div class="chart-label">Técnico</div>
+        <canvas id="chartTecnico" width="120" height="120"></canvas>
+      </div>
+      
+      <div class="chart-item">
+        <div class="glass-container">
+          <div class="glass">
+            <div class="liquid" id="liquidEncaminhado"></div>
+            <div class="percentage" id="percentEncaminhado">0%</div>
+          </div>
+        </div>
+        <div class="chart-label">Encaminhado</div>
+        <canvas id="chartEncaminhado" width="120" height="120"></canvas>
+      </div>
+      
+      <div class="chart-item">
+        <div class="glass-container">
+          <div class="glass">
+            <div class="liquid" id="liquidMovimentado"></div>
+            <div class="percentage" id="percentMovimentado">0%</div>
+          </div>
+        </div>
+        <div class="chart-label">Movimentação</div>
+        <canvas id="chartMovimentado" width="120" height="120"></canvas>
+      </div>
     </div>
   </div>
 

@@ -40,6 +40,7 @@ const stageSections = document.getElementById('stageSections');
 
 let todosOsCadastros = [];
 
+
 // Dark Mode Logic
 const isDarkMode = localStorage.getItem('darkMode') === 'true';
 if (isDarkMode) {
@@ -343,6 +344,37 @@ function etapaConcluida(cadastro, etapa) {
   return false;
 }
 
+// Verificar se etapa está reprovada
+function etapaReprovada(cadastro, etapa) {
+  if (etapa === 'psicologo') {
+    const resultado = cadastro.resultado || 'aguardando';
+    return resultado === 'desfavoravel' || resultado === 'nao_compareceu';
+  } else if (etapa === 'p2') {
+    return (cadastro.resultadoP2 || 'aguardando') === 'desfavoravel';
+  } else if (etapa === 'tecnico') {
+    const resultado = cadastro.resultadoTecnico || 'aguardando';
+    return resultado === 'desfavoravel' || resultado === 'nao_compareceu';
+  }
+  return false;
+}
+
+// Obter última etapa concluída do cadastro
+function ultimaEtapaConcluida(cadastro) {
+  // Verificar se alguma etapa foi reprovada - se sim, não tem última etapa
+  if (etapaReprovada(cadastro, 'psicologo') || 
+      etapaReprovada(cadastro, 'p2') || 
+      etapaReprovada(cadastro, 'tecnico')) {
+    return null;
+  }
+  
+  if (etapaConcluida(cadastro, 'movimentado')) return 'movimentado';
+  if (etapaConcluida(cadastro, 'encaminhado')) return 'encaminhado';
+  if (etapaConcluida(cadastro, 'tecnico')) return 'tecnico';
+  if (etapaConcluida(cadastro, 'p2')) return 'p2';
+  if (etapaConcluida(cadastro, 'psicologo')) return 'psicologo';
+  return null;
+}
+
 // Filtrar cadastros
 function filtrarCadastros(cadastros) {
   const filtroGrad = filtroGraduacao.value;
@@ -366,6 +398,11 @@ function filtrarCadastros(cadastros) {
     // Filtro de etapa
     if (filtroEt === 'sem_etapas') {
       return semEtapasPreenchidas(cadastro);
+    } else if (filtroEt === 'reprovados') {
+      // Show all records that have any stage rejected
+      return etapaReprovada(cadastro, 'psicologo') || 
+             etapaReprovada(cadastro, 'p2') || 
+             etapaReprovada(cadastro, 'tecnico');
     } else if (filtroEt && !etapaConcluida(cadastro, filtroEt)) {
       return false;
     }
@@ -408,6 +445,95 @@ function renderizarTabela(cadastros) {
   });
 }
 
+
+// Atualizar gráficos de estágio
+function atualizarGraficos() {
+  const total = todosOsCadastros.length;
+  if (total === 0) return;
+  
+  const etapas = ['psicologo', 'p2', 'tecnico', 'encaminhado', 'movimentado'];
+  
+  etapas.forEach(etapa => {
+    // Contar apenas registros cuja última etapa concluída é esta etapa específica
+    const concluidos = todosOsCadastros.filter(c => ultimaEtapaConcluida(c) === etapa).length;
+    const porcentagem = Math.round((concluidos / total) * 100);
+    
+    // Atualizar líquido
+    const liquidEl = document.getElementById(`liquid${etapa.charAt(0).toUpperCase() + etapa.slice(1)}`);
+    const percentEl = document.getElementById(`percent${etapa.charAt(0).toUpperCase() + etapa.slice(1)}`);
+    
+    if (liquidEl) liquidEl.style.height = `${porcentagem}%`;
+    if (percentEl) percentEl.textContent = `${porcentagem}%`;
+    
+    // Calcular breakdown por graduação - apenas para registros cuja última etapa é esta
+    const cbSd = todosOsCadastros.filter(c => {
+      const grad = c.graduacao.toUpperCase();
+      return (grad.includes('CB') || grad.includes('SD') || grad.includes('CL')) && ultimaEtapaConcluida(c) === etapa;
+    }).length;
+    
+    const sgtSubten = todosOsCadastros.filter(c => {
+      const grad = c.graduacao.toUpperCase();
+      return (grad.includes('SGT') || grad.includes('SUBTEN')) && ultimaEtapaConcluida(c) === etapa;
+    }).length;
+    
+    // Desenhar gráfico circular
+    const canvas = document.getElementById(`chart${etapa.charAt(0).toUpperCase() + etapa.slice(1)}`);
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const centerX = 60;
+      const centerY = 60;
+      const radius = 50;
+      
+      ctx.clearRect(0, 0, 120, 120);
+      
+      // Background circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = '#e0e0e0';
+      ctx.fill();
+      
+      if (concluidos > 0) {
+        // CB/SD segment
+        const cbSdAngle = (cbSd / concluidos) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + cbSdAngle);
+        ctx.closePath();
+        ctx.fillStyle = '#2196F3';
+        ctx.fill();
+        
+        // SGT/SUBTEN segment
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, -Math.PI / 2 + cbSdAngle, -Math.PI / 2 + 2 * Math.PI);
+        ctx.closePath();
+        ctx.fillStyle = '#FF9800';
+        ctx.fill();
+      }
+      
+      // Inner circle for donut effect
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * 0.6, 0, 2 * Math.PI);
+      ctx.fillStyle = document.body.classList.contains('dark-mode') ? '#1e1e1e' : 'white';
+      ctx.fill();
+      
+      // Text
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 11px Noto Sans';
+      ctx.textAlign = 'center';
+      
+      if (concluidos > 0) {
+        const cbPercent = Math.round((cbSd / concluidos) * 100);
+        const sgtPercent = Math.round((sgtSubten / concluidos) * 100);
+        ctx.fillText(`CB/SD: ${cbPercent}%`, centerX, centerY - 5);
+        ctx.fillText(`SGT: ${sgtPercent}%`, centerX, centerY + 10);
+      } else {
+        ctx.fillText('0%', centerX, centerY + 5);
+      }
+    }
+  });
+}
+
 // Carregar dados
 onValue(cadastrosRef, (snapshot) => {
   tableBody.innerHTML = '';
@@ -416,6 +542,8 @@ onValue(cadastrosRef, (snapshot) => {
     tableBody.innerHTML = '<tr><td colspan="10" class="no-data">Nenhum cadastro encontrado</td></tr>';
     todosOsCadastros = [];
     totalCountEl.textContent = '0';
+    renderizarRecentes();
+    atualizarGraficos();
     return;
   }
 
@@ -430,6 +558,7 @@ onValue(cadastrosRef, (snapshot) => {
   totalCountEl.textContent = todosOsCadastros.length;
   const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
   renderizarTabela(cadastrosFiltrados);
+  atualizarGraficos();
 });
 
 // Atualizar ao mudar filtros
