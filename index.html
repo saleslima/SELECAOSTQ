@@ -11,7 +11,7 @@
   <div class="lightning-bolt">⚡</div>
   <div class="container">
     <div class="header">
-      <h1 class="animated-title">SEÇÃO DE TREINAMENTO & QUALIDADE ⚡</h1>
+      <h1 class="animated-title">SEÇÃO DE QUALIDADE E TREINAMENTO ⚡</h1>
       <div class="header-actions">
         <div id="totalCadastros" class="total-badge">
           Total: <span id="totalCount">0</span>
@@ -32,6 +32,14 @@
       </div>
 
       <div class="filter-group">
+        <div class="status-checkboxes">
+          <input type="checkbox" id="checkConcluida" class="status-checkbox green" title="Concluída">
+          <input type="checkbox" id="checkAgendada" class="status-checkbox yellow" title="Agendada">
+          <input type="checkbox" id="checkReprovada" class="status-checkbox red" title="Reprovada">
+        </div>
+      </div>
+
+      <div class="filter-group">
         <label>Etapa (Concluída)</label>
         <select id="filtroEtapa">
           <option value="">Todas</option>
@@ -42,6 +50,25 @@
           <option value="tecnico">Técnico</option>
           <option value="encaminhado">Encaminhado</option>
           <option value="movimentado">Movimentado</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Tempo</label>
+        <select id="filtroTempo">
+          <option value="">Todos</option>
+          <option value="1">01 (30 dias)</option>
+          <option value="2">02 (60 dias)</option>
+          <option value="3">03 (90 dias)</option>
+          <option value="4">04 (120 dias)</option>
+          <option value="5">05 (150 dias)</option>
+          <option value="6">06 (180 dias)</option>
+          <option value="7">07 (210 dias)</option>
+          <option value="8">08 (240 dias)</option>
+          <option value="9">09 (270 dias)</option>
+          <option value="10">10 (300 dias)</option>
+          <option value="11">11 (330 dias)</option>
+          <option value="12">12 (360 dias)</option>
         </select>
       </div>
 

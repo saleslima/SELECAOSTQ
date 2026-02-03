@@ -38,6 +38,10 @@ const totalBadge = document.getElementById('totalCadastros');
 const statsModal = document.getElementById('statsModal');
 const closeStatsBtn = document.querySelector('.close-stats');
 const stageSections = document.getElementById('stageSections');
+const checkConcluida = document.getElementById('checkConcluida');
+const checkAgendada = document.getElementById('checkAgendada');
+const checkReprovada = document.getElementById('checkReprovada');
+const filtroTempo = document.getElementById('filtroTempo');
 
 let todosOsCadastros = [];
 
@@ -368,6 +372,18 @@ function etapaConcluida(cadastro, etapa) {
   return false;
 }
 
+// Verificar se etapa está agendada/aguardando (amarelo)
+function etapaAgendada(cadastro, etapa) {
+  if (etapa === 'psicologo') {
+    return cadastro.psicologoData && (cadastro.resultado === 'aguardando' || !cadastro.resultado);
+  } else if (etapa === 'p2') {
+    return cadastro.msgP2 && (cadastro.resultadoP2 === 'aguardando' || !cadastro.resultadoP2);
+  } else if (etapa === 'tecnico') {
+    return cadastro.tecnicoData && (cadastro.resultadoTecnico === 'aguardando' || !cadastro.resultadoTecnico);
+  }
+  return false;
+}
+
 // Verificar se etapa está reprovada
 function etapaReprovada(cadastro, etapa) {
   if (etapa === 'psicologo') {
@@ -399,12 +415,50 @@ function ultimaEtapaConcluida(cadastro) {
   return null;
 }
 
+// Check if record has any scheduled/pending stage
+function temFaseAgendada(cadastro) {
+  // Psicólogo: tem data mas resultado aguardando
+  const psicologoPendente = cadastro.psicologoData && (cadastro.resultado === 'aguardando' || !cadastro.resultado);
+  // P/2: tem msg mas resultado aguardando
+  const p2Pendente = cadastro.msgP2 && (cadastro.resultadoP2 === 'aguardando' || !cadastro.resultadoP2);
+  // Técnico: tem data mas resultado aguardando
+  const tecnicoPendente = cadastro.tecnicoData && (cadastro.resultadoTecnico === 'aguardando' || !cadastro.resultadoTecnico);
+  
+  return psicologoPendente || p2Pendente || tecnicoPendente;
+}
+
+// Check if record has any completed stage (favorável)
+function temFaseConcluida(cadastro) {
+  return etapaConcluida(cadastro, 'psicologo') ||
+         etapaConcluida(cadastro, 'p2') ||
+         etapaConcluida(cadastro, 'tecnico') ||
+         etapaConcluida(cadastro, 'encaminhado') ||
+         etapaConcluida(cadastro, 'movimentado');
+}
+
 // Filtrar cadastros
 function filtrarCadastros(cadastros) {
   const filtroGrad = filtroGraduacao.value;
   const filtroEt = filtroEtapa.value;
+  const concluidaChecked = checkConcluida.checked;
+  const agendadaChecked = checkAgendada.checked;
+  const reprovadaChecked = checkReprovada.checked;
+  const tempo = filtroTempo.value;
   
   return cadastros.filter(cadastro => {
+    // Filtro de tempo
+    if (tempo) {
+      const criadoEm = cadastro.criadoEm ? new Date(cadastro.criadoEm) : null;
+      if (!criadoEm) return false;
+      
+      const hoje = new Date();
+      const diasNoSistema = Math.floor((hoje - criadoEm) / (1000 * 60 * 60 * 24));
+      const periodoMaximo = parseInt(tempo) * 30;
+      
+      // Records must be within 0 to periodoMaximo days old
+      if (diasNoSistema < 0 || diasNoSistema > periodoMaximo) return false;
+    }
+    
     // Filtro de graduação
     if (filtroGrad) {
       const grad = cadastro.graduacao.toUpperCase();
@@ -419,16 +473,56 @@ function filtrarCadastros(cadastros) {
       }
     }
     
-    // Filtro de etapa
-    if (filtroEt === 'sem_etapas') {
-      return semEtapasPreenchidas(cadastro);
-    } else if (filtroEt === 'reprovados') {
-      // Show all records that have any stage rejected
-      return etapaReprovada(cadastro, 'psicologo') || 
-             etapaReprovada(cadastro, 'p2') || 
-             etapaReprovada(cadastro, 'tecnico');
-    } else if (filtroEt && !etapaConcluida(cadastro, filtroEt)) {
-      return false;
+    // Filtro combinado de etapa e status
+    if (filtroEt) {
+      if (filtroEt === 'sem_etapas') {
+        if (!semEtapasPreenchidas(cadastro)) return false;
+      } else if (filtroEt === 'reprovados') {
+        if (!temReprovacao(cadastro)) return false;
+      } else {
+        // Para outras etapas, verificar com base nos checkboxes
+        const algumCheckboxMarcado = concluidaChecked || agendadaChecked || reprovadaChecked;
+        
+        if (algumCheckboxMarcado) {
+          let passaFiltroEtapa = false;
+          
+          if (concluidaChecked && etapaConcluida(cadastro, filtroEt)) {
+            passaFiltroEtapa = true;
+          }
+          
+          if (agendadaChecked && etapaAgendada(cadastro, filtroEt)) {
+            passaFiltroEtapa = true;
+          }
+          
+          if (reprovadaChecked && etapaReprovada(cadastro, filtroEt)) {
+            passaFiltroEtapa = true;
+          }
+          
+          if (!passaFiltroEtapa) return false;
+        } else {
+          // Se nenhum checkbox marcado, mostrar apenas concluídas
+          if (!etapaConcluida(cadastro, filtroEt)) return false;
+        }
+      }
+    } else {
+      // Sem filtro de etapa, aplicar checkboxes globalmente
+      if (concluidaChecked || agendadaChecked || reprovadaChecked) {
+        let passaFiltroStatus = false;
+        
+        if (concluidaChecked && temFaseConcluida(cadastro)) {
+          passaFiltroStatus = true;
+        }
+        
+        if (agendadaChecked && temFaseAgendada(cadastro)) {
+          passaFiltroStatus = true;
+        }
+        
+        if (reprovadaChecked && temReprovacao(cadastro)) {
+          passaFiltroStatus = true;
+        }
+        
+        if (!passaFiltroStatus) return false;
+      }
     }
     
     return true;
@@ -451,7 +545,7 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 30px; height: 30px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
@@ -631,6 +725,28 @@ filtroGraduacao.addEventListener('change', () => {
 });
 
 filtroEtapa.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+// Atualizar ao mudar checkboxes
+checkConcluida.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+checkAgendada.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+checkReprovada.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+// Atualizar ao mudar tempo
+filtroTempo.addEventListener('change', () => {
   const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
   renderizarTabela(cadastrosFiltrados);
 });
