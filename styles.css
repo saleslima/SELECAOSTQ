@@ -229,6 +229,26 @@ body.dark-mode .status-checkbox.red {
   box-shadow: 0 4px 12px rgba(0,0,0,0.18);
 }
 
+.btn-delete-filtered {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  color: white;
+  border: none;
+  padding: 11px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(229,62,62,0.25);
+  letter-spacing: 0.3px;
+}
+
+.btn-delete-filtered:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(229,62,62,0.35);
+}
+
 h1 {
   font-size: 22px;
   font-weight: 700;

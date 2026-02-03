@@ -42,6 +42,7 @@ const checkConcluida = document.getElementById('checkConcluida');
 const checkAgendada = document.getElementById('checkAgendada');
 const checkReprovada = document.getElementById('checkReprovada');
 const filtroTempo = document.getElementById('filtroTempo');
+const deleteFilteredBtn = document.getElementById('deleteFilteredBtn');
 
 let todosOsCadastros = [];
 
@@ -545,7 +546,7 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
@@ -867,6 +868,59 @@ exportPdfBtn.addEventListener('click', () => {
   });
   
   doc.save('relatorio-recrutamento.pdf');
+});
+
+// Delete filtered records
+deleteFilteredBtn.addEventListener('click', async () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  
+  if (cadastrosFiltrados.length === 0) {
+    alert('Nenhum cadastro para excluir');
+    return;
+  }
+
+  // Ask for password
+  const senha = prompt('Digite a senha para excluir os registros:');
+  
+  if (senha === null) {
+    return; // User cancelled
+  }
+  
+  if (senha !== 'stqall') {
+    alert('Senha incorreta!');
+    return;
+  }
+  
+  // Show what will be deleted
+  let mensagem = `Você está prestes a excluir ${cadastrosFiltrados.length} registro(s):\n\n`;
+  
+  cadastrosFiltrados.slice(0, 10).forEach(c => {
+    mensagem += `- ${c.graduacao} ${c.nome} (RE: ${c.re}-${c.digito})\n`;
+  });
+  
+  if (cadastrosFiltrados.length > 10) {
+    mensagem += `\n... e mais ${cadastrosFiltrados.length - 10} registro(s).\n`;
+  }
+  
+  mensagem += '\n\nTem certeza que deseja excluir estes registros?\nEsta ação não pode ser desfeita!';
+  
+  const confirmacao = confirm(mensagem);
+  
+  if (!confirmacao) {
+    return;
+  }
+  
+  // Delete all filtered records
+  try {
+    const deletePromises = cadastrosFiltrados.map(cadastro => 
+      remove(ref(database, `cadastros/${cadastro.id}`))
+    );
+    
+    await Promise.all(deletePromises);
+    alert(`${cadastrosFiltrados.length} registro(s) excluído(s) com sucesso!`);
+  } catch (error) {
+    alert('Erro ao excluir registros: ' + error.message);
+  }
 });
 
 // Compartilhar via email
