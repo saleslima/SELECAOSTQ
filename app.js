@@ -25,7 +25,12 @@ const closeBtn = document.querySelector('.close');
 const tableBody = document.getElementById('tableBody');
 const formTitle = document.getElementById('formTitle');
 const psicologoDataInput = document.getElementById('psicologoData');
+const psicologoHoraInput = document.getElementById('psicologoHora');
 const validadeInput = document.getElementById('validade');
+const msgP2Input = document.getElementById('msgP2');
+const msgP2TimestampEl = document.getElementById('msgP2Timestamp');
+const tecnicoHoraInput = document.getElementById('tecnicoHora');
+const resultadoInput = document.getElementById('resultado');
 const whatsappInput = document.getElementById('whatsapp');
 const foneFixoInput = document.getElementById('foneFixo');
 const filtroGraduacao = document.getElementById('filtroGraduacao');
@@ -72,14 +77,25 @@ foneFixoInput.addEventListener('input', (e) => {
   e.target.value = e.target.value.replace(/\D/g, '');
 });
 
-// Calcular validade automaticamente
-psicologoDataInput.addEventListener('change', (e) => {
-  if (e.target.value) {
-    const data = new Date(e.target.value + 'T00:00:00');
-    data.setMonth(data.getMonth() + 6);
-    validadeInput.value = data.toLocaleDateString('pt-BR');
+// Calcular validade automaticamente (180 dias) quando resultado é preenchido
+resultadoInput.addEventListener('change', (e) => {
+  if (e.target.value && (e.target.value === 'favoravel' || e.target.value === 'desfavoravel')) {
+    // Set validade to 180 days from today
+    validadeInput.value = '180';
   } else {
     validadeInput.value = '';
+  }
+});
+
+// Auto-timestamp when P/2 message is filled
+let msgP2Timestamp = null;
+msgP2Input.addEventListener('input', (e) => {
+  if (e.target.value && !msgP2Timestamp) {
+    msgP2Timestamp = new Date().toISOString();
+    msgP2TimestampEl.textContent = `Enviado em: ${new Date(msgP2Timestamp).toLocaleString('pt-BR')}`;
+  } else if (!e.target.value) {
+    msgP2Timestamp = null;
+    msgP2TimestampEl.textContent = '';
   }
 });
 
@@ -93,27 +109,29 @@ newBtn.addEventListener('click', () => {
 });
 
 // Update field states based on sequential logic
+// Order: PSICOLOGICO -> TECNICO -> P/2 -> ENCAMINHADO -> MOVIMENTAÇÃO
 function updateFieldStates() {
   const psicologoData = document.getElementById('psicologoData').value;
   const resultado = document.getElementById('resultado').value;
-  const msgP2 = document.getElementById('msgP2').value;
-  const resultadoP2 = document.getElementById('resultadoP2').value;
   const tecnicoData = document.getElementById('tecnicoData').value;
   const resultadoTecnico = document.getElementById('resultadoTecnico').value;
+  const msgP2 = document.getElementById('msgP2').value;
+  const resultadoP2 = document.getElementById('resultadoP2').value;
   const encMovimentacao = document.getElementById('encMovimentacao').value;
 
-  // P/2 fields enabled only if psicólogo has data and resultado
-  const p2Enabled = psicologoData && resultado && resultado !== 'aguardando';
+  // Técnico enabled only if psicólogo has data and resultado
+  const tecnicoEnabled = psicologoData && resultado;
+  document.getElementById('tecnicoData').disabled = !tecnicoEnabled;
+  document.getElementById('tecnicoHora').disabled = !tecnicoEnabled;
+  document.getElementById('resultadoTecnico').disabled = !tecnicoEnabled;
+
+  // P/2 enabled only if técnico has data and resultado
+  const p2Enabled = tecnicoEnabled && tecnicoData && resultadoTecnico && resultadoTecnico !== 'aguardando';
   document.getElementById('msgP2').disabled = !p2Enabled;
   document.getElementById('resultadoP2').disabled = !p2Enabled;
 
-  // Técnico fields enabled only if P/2 has msg and resultado
-  const tecnicoEnabled = p2Enabled && msgP2 && resultadoP2 && resultadoP2 !== 'aguardando';
-  document.getElementById('tecnicoData').disabled = !tecnicoEnabled;
-  document.getElementById('resultadoTecnico').disabled = !tecnicoEnabled;
-
-  // Encaminhado enabled only if técnico has data and resultado
-  const encEnabled = tecnicoEnabled && tecnicoData && resultadoTecnico && resultadoTecnico !== 'aguardando';
+  // Encaminhado enabled only if P/2 has msg and resultado
+  const encEnabled = p2Enabled && msgP2 && resultadoP2 && resultadoP2 !== 'aguardando';
   document.getElementById('encMovimentacao').disabled = !encEnabled;
 
   // Movimentação enabled only if encaminhado is filled
@@ -193,10 +211,10 @@ function temReprovacao(cadastro) {
 // Add listeners to form fields for sequential enabling
 document.getElementById('psicologoData').addEventListener('change', updateFieldStates);
 document.getElementById('resultado').addEventListener('change', updateFieldStates);
-document.getElementById('msgP2').addEventListener('input', updateFieldStates);
-document.getElementById('resultadoP2').addEventListener('change', updateFieldStates);
 document.getElementById('tecnicoData').addEventListener('change', updateFieldStates);
 document.getElementById('resultadoTecnico').addEventListener('change', updateFieldStates);
+document.getElementById('msgP2').addEventListener('input', updateFieldStates);
+document.getElementById('resultadoP2').addEventListener('change', updateFieldStates);
 document.getElementById('encMovimentacao').addEventListener('input', updateFieldStates);
 
 // Submeter formulário
@@ -225,11 +243,15 @@ form.addEventListener('submit', async (e) => {
     foneFixo: foneFixo,
     unidade: document.getElementById('unidade').value.toUpperCase(),
     psicologoData: document.getElementById('psicologoData').value,
-    resultado: document.getElementById('resultado').value || 'aguardando',
-    validade: validadeInput.value,
+    psicologoHora: document.getElementById('psicologoHora').value,
+    resultado: document.getElementById('resultado').value || '',
+    validadeInicial: validadeInput.value,
+    validadeDataInicio: validadeInput.value ? new Date().toISOString() : null,
     msgP2: document.getElementById('msgP2').value.toUpperCase(),
+    msgP2Timestamp: msgP2Timestamp,
     resultadoP2: document.getElementById('resultadoP2').value || 'aguardando',
     tecnicoData: document.getElementById('tecnicoData').value,
+    tecnicoHora: document.getElementById('tecnicoHora').value,
     resultadoTecnico: document.getElementById('resultadoTecnico').value || 'aguardando',
     encMovimentacao: document.getElementById('encMovimentacao').value.toUpperCase(),
     movimentadoData: document.getElementById('movimentadoData').value,
@@ -251,33 +273,57 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// Verificar se validade expirou
-function validadeExpirada(validadeStr) {
-  if (!validadeStr) return false;
-  const partes = validadeStr.split('/');
-  if (partes.length !== 3) return false;
-  const validade = new Date(partes[2], partes[1] - 1, partes[0]);
-  return validade < new Date();
+// Calculate remaining validity days
+function calcularDiasRestantes(cadastro) {
+  if (!cadastro.validadeInicial || !cadastro.validadeDataInicio) return null;
+  
+  const dataInicio = new Date(cadastro.validadeDataInicio);
+  const hoje = new Date();
+  const diasDecorridos = Math.floor((hoje - dataInicio) / (1000 * 60 * 60 * 24));
+  const diasRestantes = parseInt(cadastro.validadeInicial) - diasDecorridos;
+  
+  return Math.max(0, diasRestantes);
+}
+
+// Get validity status
+function getValidadeStatus(cadastro) {
+  const diasRestantes = calcularDiasRestantes(cadastro);
+  
+  if (diasRestantes === null) return null;
+  
+  if (diasRestantes === 0) {
+    if (cadastro.resultado === 'favoravel') return 'INVALIDO';
+    if (cadastro.resultado === 'desfavoravel') return 'RETESTE';
+  }
+  
+  return diasRestantes;
 }
 
 // Criar ícone de etapa do psicólogo
 function criarEtapaPsicologo(cadastro) {
   const temData = !!cadastro.psicologoData;
-  const resultado = cadastro.resultado || 'aguardando';
-  const expirada = validadeExpirada(cadastro.validade);
+  const resultado = cadastro.resultado || '';
+  const validadeStatus = getValidadeStatus(cadastro);
   
   let classe = 'stage';
   let simbolo = '○';
   
-  if (resultado === 'favoravel' && expirada) {
-    classe = 'stage warning';
-    simbolo = '⚠';
-  } else if (resultado === 'favoravel') {
-    classe = 'stage completed';
-    simbolo = '✓';
-  } else if (resultado === 'desfavoravel' || resultado === 'nao_compareceu') {
-    classe = 'stage rejected';
-    simbolo = '✗';
+  if (resultado === 'favoravel') {
+    if (validadeStatus === 'INVALIDO') {
+      classe = 'stage warning';
+      simbolo = '⚠';
+    } else {
+      classe = 'stage completed';
+      simbolo = '✓';
+    }
+  } else if (resultado === 'desfavoravel') {
+    if (validadeStatus === 'RETESTE') {
+      classe = 'stage warning';
+      simbolo = '↻';
+    } else {
+      classe = 'stage rejected';
+      simbolo = '✗';
+    }
   } else if (temData) {
     classe = 'stage pending';
     simbolo = '○';
@@ -294,10 +340,10 @@ function criarEtapaP2(cadastro) {
   let classe = 'stage';
   let simbolo = '○';
   
-  if (resultado === 'favoravel') {
+  if (resultado === 'positivo') {
     classe = 'stage completed';
     simbolo = '✓';
-  } else if (resultado === 'desfavoravel') {
+  } else if (resultado === 'nao_retornou') {
     classe = 'stage rejected';
     simbolo = '✗';
   } else if (temMsg) {
@@ -319,7 +365,7 @@ function criarEtapaTecnico(cadastro) {
   if (resultado === 'favoravel') {
     classe = 'stage completed';
     simbolo = '✓';
-  } else if (resultado === 'desfavoravel' || resultado === 'nao_compareceu') {
+  } else if (resultado === 'desfavoravel' || resultado === 'nao_compareceu' || resultado === 'desistiu') {
     classe = 'stage rejected';
     simbolo = '✗';
   } else if (temData) {
@@ -358,13 +404,13 @@ function semEtapasPreenchidas(cadastro) {
 // Verificar se etapa está concluída (verde)
 function etapaConcluida(cadastro, etapa) {
   if (etapa === 'psicologo') {
-    const resultado = cadastro.resultado || 'aguardando';
-    const expirada = validadeExpirada(cadastro.validade);
-    return resultado === 'favoravel' && !expirada;
-  } else if (etapa === 'p2') {
-    return (cadastro.resultadoP2 || 'aguardando') === 'favoravel';
+    const resultado = cadastro.resultado || '';
+    const validadeStatus = getValidadeStatus(cadastro);
+    return resultado === 'favoravel' && validadeStatus !== 'INVALIDO';
   } else if (etapa === 'tecnico') {
     return (cadastro.resultadoTecnico || 'aguardando') === 'favoravel';
+  } else if (etapa === 'p2') {
+    return (cadastro.resultadoP2 || 'aguardando') === 'positivo';
   } else if (etapa === 'encaminhado') {
     return !!cadastro.encMovimentacao;
   } else if (etapa === 'movimentado') {
@@ -376,11 +422,11 @@ function etapaConcluida(cadastro, etapa) {
 // Verificar se etapa está agendada/aguardando (amarelo)
 function etapaAgendada(cadastro, etapa) {
   if (etapa === 'psicologo') {
-    return cadastro.psicologoData && (cadastro.resultado === 'aguardando' || !cadastro.resultado);
-  } else if (etapa === 'p2') {
-    return cadastro.msgP2 && (cadastro.resultadoP2 === 'aguardando' || !cadastro.resultadoP2);
+    return cadastro.psicologoData && !cadastro.resultado;
   } else if (etapa === 'tecnico') {
     return cadastro.tecnicoData && (cadastro.resultadoTecnico === 'aguardando' || !cadastro.resultadoTecnico);
+  } else if (etapa === 'p2') {
+    return cadastro.msgP2 && (cadastro.resultadoP2 === 'aguardando' || !cadastro.resultadoP2);
   }
   return false;
 }
@@ -388,44 +434,45 @@ function etapaAgendada(cadastro, etapa) {
 // Verificar se etapa está reprovada
 function etapaReprovada(cadastro, etapa) {
   if (etapa === 'psicologo') {
-    const resultado = cadastro.resultado || 'aguardando';
-    return resultado === 'desfavoravel' || resultado === 'nao_compareceu';
-  } else if (etapa === 'p2') {
-    return (cadastro.resultadoP2 || 'aguardando') === 'desfavoravel';
+    const resultado = cadastro.resultado || '';
+    return resultado === 'desfavoravel';
   } else if (etapa === 'tecnico') {
     const resultado = cadastro.resultadoTecnico || 'aguardando';
-    return resultado === 'desfavoravel' || resultado === 'nao_compareceu';
+    return resultado === 'desfavoravel' || resultado === 'nao_compareceu' || resultado === 'desistiu';
+  } else if (etapa === 'p2') {
+    return (cadastro.resultadoP2 || 'aguardando') === 'nao_retornou';
   }
   return false;
 }
 
 // Obter última etapa concluída do cadastro
+// Order: PSICOLOGICO -> TECNICO -> P/2 -> ENCAMINHADO -> MOVIMENTAÇÃO
 function ultimaEtapaConcluida(cadastro) {
   // Verificar se alguma etapa foi reprovada - se sim, não tem última etapa
   if (etapaReprovada(cadastro, 'psicologo') || 
-      etapaReprovada(cadastro, 'p2') || 
-      etapaReprovada(cadastro, 'tecnico')) {
+      etapaReprovada(cadastro, 'tecnico') || 
+      etapaReprovada(cadastro, 'p2')) {
     return null;
   }
   
   if (etapaConcluida(cadastro, 'movimentado')) return 'movimentado';
   if (etapaConcluida(cadastro, 'encaminhado')) return 'encaminhado';
-  if (etapaConcluida(cadastro, 'tecnico')) return 'tecnico';
   if (etapaConcluida(cadastro, 'p2')) return 'p2';
+  if (etapaConcluida(cadastro, 'tecnico')) return 'tecnico';
   if (etapaConcluida(cadastro, 'psicologo')) return 'psicologo';
   return null;
 }
 
 // Check if record has any scheduled/pending stage
 function temFaseAgendada(cadastro) {
-  // Psicólogo: tem data mas resultado aguardando
-  const psicologoPendente = cadastro.psicologoData && (cadastro.resultado === 'aguardando' || !cadastro.resultado);
-  // P/2: tem msg mas resultado aguardando
-  const p2Pendente = cadastro.msgP2 && (cadastro.resultadoP2 === 'aguardando' || !cadastro.resultadoP2);
+  // Psicólogo: tem data mas sem resultado
+  const psicologoPendente = cadastro.psicologoData && !cadastro.resultado;
   // Técnico: tem data mas resultado aguardando
   const tecnicoPendente = cadastro.tecnicoData && (cadastro.resultadoTecnico === 'aguardando' || !cadastro.resultadoTecnico);
+  // P/2: tem msg mas resultado aguardando
+  const p2Pendente = cadastro.msgP2 && (cadastro.resultadoP2 === 'aguardando' || !cadastro.resultadoP2);
   
-  return psicologoPendente || p2Pendente || tecnicoPendente;
+  return psicologoPendente || tecnicoPendente || p2Pendente;
 }
 
 // Check if record has any completed stage (favorável)
@@ -546,10 +593,10 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
-      <td>${criarEtapaP2(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
+      <td>${criarEtapaP2(cadastro)}</td>
       <td>${criarEtapaEncaminhado(cadastro)}</td>
       <td>${criarEtapaMovimentacao(cadastro)}</td>
       <td class="actions">
@@ -780,12 +827,31 @@ window.editarCadastro = (id) => {
       document.getElementById('foneFixo').value = cadastro.foneFixo || '';
       document.getElementById('unidade').value = cadastro.unidade;
       document.getElementById('psicologoData').value = cadastro.psicologoData || '';
+      document.getElementById('psicologoHora').value = cadastro.psicologoHora || '';
       document.getElementById('resultado').value = cadastro.resultado || '';
-      validadeInput.value = cadastro.validade || '';
-      document.getElementById('msgP2').value = cadastro.msgP2 || '';
-      document.getElementById('resultadoP2').value = cadastro.resultadoP2 || '';
+      
+      // Calculate remaining days for validade
+      const diasRestantes = calcularDiasRestantes(cadastro);
+      if (diasRestantes !== null) {
+        validadeInput.value = diasRestantes;
+      } else {
+        validadeInput.value = '';
+      }
+      
       document.getElementById('tecnicoData').value = cadastro.tecnicoData || '';
+      document.getElementById('tecnicoHora').value = cadastro.tecnicoHora || '';
       document.getElementById('resultadoTecnico').value = cadastro.resultadoTecnico || '';
+      document.getElementById('msgP2').value = cadastro.msgP2 || '';
+      
+      if (cadastro.msgP2Timestamp) {
+        msgP2Timestamp = cadastro.msgP2Timestamp;
+        msgP2TimestampEl.textContent = `Enviado em: ${new Date(msgP2Timestamp).toLocaleString('pt-BR')}`;
+      } else {
+        msgP2Timestamp = null;
+        msgP2TimestampEl.textContent = '';
+      }
+      
+      document.getElementById('resultadoP2').value = cadastro.resultadoP2 || '';
       document.getElementById('encMovimentacao').value = cadastro.encMovimentacao || '';
       document.getElementById('movimentadoData').value = cadastro.movimentadoData || '';
       
@@ -959,8 +1025,8 @@ exportEmailBtn.addEventListener('click', () => {
     if (c.foneFixo) corpo += `Fone Fixo: ${formatarTelefone(c.foneFixo)}\n`;
     corpo += `Unidade: ${c.unidade}\n`;
     corpo += `Psicológico: ${getStatusText(c, 'psicologo')}\n`;
-    corpo += `P/2: ${getStatusText(c, 'p2')}\n`;
     corpo += `Técnico: ${getStatusText(c, 'tecnico')}\n`;
+    corpo += `P/2: ${getStatusText(c, 'p2')}\n`;
     corpo += `Encaminhado: ${c.encMovimentacao ? 'Sim' : 'Não'}\n`;
     corpo += `Movimentado: ${c.movimentadoData ? 'Sim' : 'Não'}\n`;
     corpo += '\n---\n\n';
@@ -975,22 +1041,29 @@ exportEmailBtn.addEventListener('click', () => {
 // Obter texto de status
 function getStatusText(cadastro, etapa) {
   if (etapa === 'psicologo') {
-    const resultado = cadastro.resultado || 'aguardando';
-    const expirada = validadeExpirada(cadastro.validade);
-    if (resultado === 'favoravel' && expirada) return 'Favorável (Expirado)';
-    if (resultado === 'favoravel') return 'Favorável';
-    if (resultado === 'desfavoravel') return 'Desfavorável';
-    if (resultado === 'nao_compareceu') return 'Não Compareceu';
-    return 'Aguardando';
-  } else if (etapa === 'p2') {
-    const resultado = cadastro.resultadoP2 || 'aguardando';
-    return resultado === 'favoravel' ? 'Favorável' : resultado === 'desfavoravel' ? 'Desfavorável' : 'Aguardando';
+    const resultado = cadastro.resultado || '';
+    const validadeStatus = getValidadeStatus(cadastro);
+    if (resultado === 'favoravel') {
+      if (validadeStatus === 'INVALIDO') return 'Favorável (Inválido)';
+      if (typeof validadeStatus === 'number') return `Favorável (${validadeStatus} dias)`;
+      return 'Favorável';
+    }
+    if (resultado === 'desfavoravel') {
+      if (validadeStatus === 'RETESTE') return 'Desfavorável (Reteste)';
+      if (typeof validadeStatus === 'number') return `Desfavorável (${validadeStatus} dias)`;
+      return 'Desfavorável';
+    }
+    return 'Agendado';
   } else if (etapa === 'tecnico') {
     const resultado = cadastro.resultadoTecnico || 'aguardando';
     if (resultado === 'favoravel') return 'Favorável';
     if (resultado === 'desfavoravel') return 'Desfavorável';
     if (resultado === 'nao_compareceu') return 'Não Compareceu';
+    if (resultado === 'desistiu') return 'Desistiu';
     return 'Aguardando';
+  } else if (etapa === 'p2') {
+    const resultado = cadastro.resultadoP2 || 'aguardando';
+    return resultado === 'positivo' ? 'Positivo' : resultado === 'nao_retornou' ? 'Não Retornou' : 'Aguardando';
   }
   return '';
 }
