@@ -443,8 +443,13 @@ label {
   display: block;
   margin-bottom: 8px;
   font-size: 13px;
-  font-weight: 600;
-  color: #4a5568;
+  font-weight: 700;
+  color: #FFD700;
+  text-shadow: 
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
   letter-spacing: 0.3px;
 }
 
@@ -702,9 +707,12 @@ body.dark-mode .modal-content {
 }
 
 body.dark-mode h1,
-body.dark-mode h2,
-body.dark-mode label {
+body.dark-mode h2 {
   color: #f7fafc;
+}
+
+body.dark-mode label {
+  color: #FFD700;
 }
 
 body.dark-mode input[type="text"],
@@ -990,7 +998,12 @@ body.dark-mode .lightning-bolt {
   font-size: 13px;
   font-weight: 700;
   text-align: center;
-  color: #2d3748;
+  color: #FFD700;
+  text-shadow: 
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
   letter-spacing: 0.3px;
 }
 
@@ -999,12 +1012,12 @@ canvas {
 }
 
 body.dark-mode .stage-charts {
-  background: white;
+  background: white !important;
   border-color: rgba(255,255,255,0.1);
 }
 
 body.dark-mode .chart-label {
-  color: #2d3748;
+  color: #FFD700;
 }
 
 body.dark-mode .glass {

@@ -105,6 +105,37 @@ async function initializeDefaultUser() {
 
 initializeDefaultUser();
 
+// Check for saved session
+function checkSession() {
+  const savedUser = localStorage.getItem('stq_user');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    setupAuthenticatedUI();
+  }
+}
+
+function setupAuthenticatedUI() {
+  loginModal.style.display = 'none';
+  mainContainer.style.display = 'block';
+  
+  // Hide admin button if not STQ
+  if (currentUser.perfil !== 'stq') {
+    adminBtn.style.display = 'none';
+  } else {
+    adminBtn.style.display = 'inline-block';
+  }
+  
+  // Hide new registration button for p2 and psicologico
+  if (currentUser.perfil === 'p2' || currentUser.perfil === 'psicologico') {
+    newBtn.style.display = 'none';
+  } else {
+    newBtn.style.display = 'inline-block';
+  }
+}
+
+// Run session check on load
+checkSession();
+
 // Login functionality
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -128,18 +159,8 @@ loginForm.addEventListener('submit', async (e) => {
     });
     
     if (userFound) {
-      loginModal.style.display = 'none';
-      mainContainer.style.display = 'block';
-      
-      // Hide admin button if not STQ
-      if (currentUser.perfil !== 'stq') {
-        adminBtn.style.display = 'none';
-      }
-      
-      // Hide new registration button for p2 and psicologico
-      if (currentUser.perfil === 'p2' || currentUser.perfil === 'psicologico') {
-        newBtn.style.display = 'none';
-      }
+      localStorage.setItem('stq_user', JSON.stringify(currentUser));
+      setupAuthenticatedUI();
     } else {
       alert('Usuário ou senha incorretos!');
     }
@@ -151,6 +172,7 @@ loginForm.addEventListener('submit', async (e) => {
 // Logout
 logoutBtn.addEventListener('click', () => {
   currentUser = null;
+  localStorage.removeItem('stq_user');
   mainContainer.style.display = 'none';
   loginModal.style.display = 'block';
   loginForm.reset();
@@ -900,7 +922,7 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
@@ -1027,7 +1049,8 @@ function atualizarGraficos() {
       // Inner circle for donut effect
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius * 0.6, 0, 2 * Math.PI);
-      ctx.fillStyle = document.body.classList.contains('dark-mode') ? '#1e1e1e' : 'white';
+      // Always white inner circle because chart background is always white
+      ctx.fillStyle = 'white';
       ctx.fill();
       
       // Text
