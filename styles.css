@@ -204,6 +204,32 @@ body.dark-mode .status-checkbox.red {
   background: #1a202c;
 }
 
+.icon-filter {
+  border: none;
+  background: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+
+.icon-filter:hover {
+  transform: scale(1.1);
+}
+
+.icon-filter.blue-square {
+  color: #4299e1;
+}
+
+.icon-filter.orange-triangle {
+  color: #ed8936;
+}
+
+.icon-filter.active {
+  text-shadow: 0 0 8px currentColor;
+}
+
 .export-buttons {
   display: flex;
   gap: 12px;
@@ -604,22 +630,28 @@ tr:hover {
 }
 
 .stage.warning {
-  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+  background: linear-gradient(135deg, #ecc94b 0%, #d69e2e 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(237,137,54,0.3);
+  box-shadow: 0 2px 8px rgba(236,201,75,0.3);
+}
+
+.stage.info {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(66,153,225,0.3);
 }
 
 .actions-col {
   width: 140px;
 }
 
-tr .actions {
+#cadastroTable tr .actions {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
 }
 
-tr.active .actions {
+#cadastroTable tr.active .actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -1012,4 +1044,63 @@ body.dark-mode::before {
 
 body.dark-mode .whatsapp-link {
   color: #25D366;
+}
+
+.timeline-content {
+  padding: 24px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #2d3748;
+}
+
+.timeline-item .timeline-icon {
+  font-size: 28px;
+  min-width: 40px;
+}
+
+.timeline-item .timeline-details h3 {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.timeline-item .timeline-details p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #555;
+}
+
+body.dark-mode .timeline-item {
+  background: #2d3748;
+  border-left-color: #4a5568;
+}
+
+body.dark-mode .timeline-item .timeline-details p {
+  color: #cbd5e0;
+}
+
+.close-timeline {
+  color: #999;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-timeline:hover {
+  color: #333;
+}
+
+body.dark-mode .close-timeline {
+  color: #aaa;
+}
+
+body.dark-mode .close-timeline:hover {
+  color: #fff;
 }

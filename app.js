@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getDatabase, ref, push, set, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import { getDatabase, ref, push, set, onValue, remove, update, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import jsPDF from 'https://esm.sh/jspdf@2.5.1';
 import autoTable from 'https://esm.sh/jspdf-autotable@3.8.2';
 
@@ -16,6 +16,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const cadastrosRef = ref(database, 'cadastros');
+const usuariosRef = ref(database, 'usuarios');
+
+let currentUser = null;
 
 const modal = document.getElementById('formModal');
 const form = document.getElementById('cadastroForm');
@@ -46,10 +49,248 @@ const stageSections = document.getElementById('stageSections');
 const checkConcluida = document.getElementById('checkConcluida');
 const checkAgendada = document.getElementById('checkAgendada');
 const checkReprovada = document.getElementById('checkReprovada');
-const filtroTempo = document.getElementById('filtroTempo');
+const dataInicio = document.getElementById('dataInicio');
+const dataFim = document.getElementById('dataFim');
 const deleteFilteredBtn = document.getElementById('deleteFilteredBtn');
+const loginModal = document.getElementById('loginModal');
+const loginForm = document.getElementById('loginForm');
+const mainContainer = document.getElementById('mainContainer');
+const adminBtn = document.getElementById('adminBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const adminModal = document.getElementById('adminModal');
+const closeAdminBtn = document.querySelector('.close-admin');
+const newUserBtn = document.getElementById('newUserBtn');
+const userFormModal = document.getElementById('userFormModal');
+const userForm = document.getElementById('userForm');
+const closeUserFormBtn = document.querySelector('.close-user-form');
+const cancelUserBtn = document.getElementById('cancelUserBtn');
+const usersTableBody = document.getElementById('usersTableBody');
+const encaminhadoCheck = document.getElementById('encaminhadoCheck');
+const movimentadoCheck = document.getElementById('movimentadoCheck');
+const encaminhadoTimestamp = document.getElementById('encaminhadoTimestamp');
+const movimentadoTimestamp = document.getElementById('movimentadoTimestamp');
+const filterPsicoReteste = document.getElementById('filterPsicoReteste');
+const filterPsicoExpiring = document.getElementById('filterPsicoExpiring');
+const searchRE = document.getElementById('searchRE');
+const timelineModal = document.getElementById('timelineModal');
+const closeTimelineBtn = document.querySelector('.close-timeline');
+const timelineContent = document.getElementById('timelineContent');
 
 let todosOsCadastros = [];
+let psicoRetesteFilter = false;
+let psicoExpiringFilter = false;
+
+// Initialize default users if not exists
+async function initializeDefaultUser() {
+  const snapshot = await get(usuariosRef);
+  if (!snapshot.exists()) {
+    await push(usuariosRef, {
+      nome: 'ADMINISTRADOR STQ',
+      re: '000000',
+      email: 'admin@stq.pm',
+      login: 'stq',
+      senha: 'daqta',
+      perfil: 'stq'
+    });
+    await push(usuariosRef, {
+      nome: 'ADMINISTRADOR',
+      re: '000001',
+      email: 'admin@admin.pm',
+      login: 'admin',
+      senha: 'daqta',
+      perfil: 'stq'
+    });
+  }
+}
+
+initializeDefaultUser();
+
+// Login functionality
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const usuario = document.getElementById('loginUsuario').value;
+  const senha = document.getElementById('loginSenha').value;
+  
+  const snapshot = await get(usuariosRef);
+  
+  if (snapshot.exists()) {
+    let userFound = false;
+    snapshot.forEach(childSnapshot => {
+      const user = childSnapshot.val();
+      if (user.login === usuario && user.senha === senha) {
+        userFound = true;
+        currentUser = {
+          id: childSnapshot.key,
+          ...user
+        };
+      }
+    });
+    
+    if (userFound) {
+      loginModal.style.display = 'none';
+      mainContainer.style.display = 'block';
+      
+      // Hide admin button if not STQ
+      if (currentUser.perfil !== 'stq') {
+        adminBtn.style.display = 'none';
+      }
+      
+      // Hide new registration button for p2 and psicologico
+      if (currentUser.perfil === 'p2' || currentUser.perfil === 'psicologico') {
+        newBtn.style.display = 'none';
+      }
+    } else {
+      alert('Usuário ou senha incorretos!');
+    }
+  } else {
+    alert('Nenhum usuário cadastrado!');
+  }
+});
+
+// Logout
+logoutBtn.addEventListener('click', () => {
+  currentUser = null;
+  mainContainer.style.display = 'none';
+  loginModal.style.display = 'block';
+  loginForm.reset();
+});
+
+// Admin button
+adminBtn.addEventListener('click', () => {
+  if (currentUser && currentUser.perfil === 'stq') {
+    const senha = prompt('Digite a senha de administrador:');
+    if (senha === 'daqta') {
+      loadUsers();
+      adminModal.style.display = 'block';
+    } else {
+      alert('Senha incorreta!');
+    }
+  }
+});
+
+closeAdminBtn.addEventListener('click', () => {
+  adminModal.style.display = 'none';
+});
+
+// New user button
+newUserBtn.addEventListener('click', () => {
+  document.getElementById('userFormTitle').textContent = 'Novo Usuário';
+  userForm.reset();
+  document.getElementById('editUserId').value = '';
+  userFormModal.style.display = 'block';
+});
+
+closeUserFormBtn.addEventListener('click', () => {
+  userFormModal.style.display = 'none';
+});
+
+cancelUserBtn.addEventListener('click', () => {
+  userFormModal.style.display = 'none';
+});
+
+// User form submit
+userForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const userData = {
+    nome: document.getElementById('userName').value.toUpperCase(),
+    re: document.getElementById('userRE').value,
+    email: document.getElementById('userEmail').value.toLowerCase(),
+    login: document.getElementById('userLogin').value.toLowerCase(),
+    senha: document.getElementById('userPassword').value,
+    perfil: document.getElementById('userPerfil').value
+  };
+  
+  const editId = document.getElementById('editUserId').value;
+  
+  try {
+    if (editId) {
+      await update(ref(database, `usuarios/${editId}`), userData);
+    } else {
+      await push(usuariosRef, userData);
+    }
+    userFormModal.style.display = 'none';
+    loadUsers();
+  } catch (error) {
+    alert('Erro ao salvar usuário: ' + error.message);
+  }
+});
+
+// Load users
+function loadUsers() {
+  onValue(usuariosRef, (snapshot) => {
+    usersTableBody.innerHTML = '';
+    
+    if (!snapshot.exists()) {
+      usersTableBody.innerHTML = '<tr><td colspan="5" class="no-data">Nenhum usuário encontrado</td></tr>';
+      return;
+    }
+    
+    snapshot.forEach(childSnapshot => {
+      const user = childSnapshot.val();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${user.nome}</td>
+        <td>${user.re}</td>
+        <td>${user.email}</td>
+        <td>${user.perfil.toUpperCase()}</td>
+        <td class="actions">
+          <button class="btn-edit" onclick="editUser('${childSnapshot.key}')">Editar</button>
+          <button class="btn-delete" onclick="deleteUser('${childSnapshot.key}')">Excluir</button>
+        </td>
+      `;
+      usersTableBody.appendChild(tr);
+    });
+  }, { onlyOnce: true });
+}
+
+// Edit user
+window.editUser = async (id) => {
+  const snapshot = await get(ref(database, `usuarios/${id}`));
+  const user = snapshot.val();
+  
+  if (user) {
+    document.getElementById('userFormTitle').textContent = 'Editar Usuário';
+    document.getElementById('editUserId').value = id;
+    document.getElementById('userName').value = user.nome;
+    document.getElementById('userRE').value = user.re;
+    document.getElementById('userEmail').value = user.email;
+    document.getElementById('userLogin').value = user.login;
+    document.getElementById('userPassword').value = user.senha;
+    document.getElementById('userPerfil').value = user.perfil;
+    userFormModal.style.display = 'block';
+  }
+};
+
+// Delete user
+window.deleteUser = (id) => {
+  if (confirm('Deseja realmente excluir este usuário?')) {
+    remove(ref(database, `usuarios/${id}`));
+    loadUsers();
+  }
+};
+
+// Encaminhado checkbox
+encaminhadoCheck.addEventListener('change', (e) => {
+  if (e.target.checked) {
+    const now = new Date().toISOString();
+    encaminhadoTimestamp.textContent = `Encaminhado em: ${new Date(now).toLocaleString('pt-BR')}`;
+  } else {
+    encaminhadoTimestamp.textContent = '';
+  }
+  updateSequentialPhases();
+});
+
+// Movimentado checkbox
+movimentadoCheck.addEventListener('change', (e) => {
+  if (e.target.checked) {
+    const now = new Date().toISOString();
+    movimentadoTimestamp.textContent = `Movimentado em: ${new Date(now).toLocaleString('pt-BR')}`;
+  } else {
+    movimentadoTimestamp.textContent = '';
+  }
+});
 
 
 // Dark Mode Logic
@@ -108,35 +349,44 @@ newBtn.addEventListener('click', () => {
   modal.style.display = 'block';
 });
 
-// Update field states based on sequential logic
-// Order: PSICOLOGICO -> TECNICO -> P/2 -> ENCAMINHADO -> MOVIMENTAÇÃO
-function updateFieldStates() {
-  const psicologoData = document.getElementById('psicologoData').value;
+// Update sequential phases visibility based on role and completion
+function updateSequentialPhases() {
   const resultado = document.getElementById('resultado').value;
-  const tecnicoData = document.getElementById('tecnicoData').value;
   const resultadoTecnico = document.getElementById('resultadoTecnico').value;
-  const msgP2 = document.getElementById('msgP2').value;
   const resultadoP2 = document.getElementById('resultadoP2').value;
-  const encMovimentacao = document.getElementById('encMovimentacao').value;
-
-  // Técnico enabled only if psicólogo has data and resultado
-  const tecnicoEnabled = psicologoData && resultado;
-  document.getElementById('tecnicoData').disabled = !tecnicoEnabled;
-  document.getElementById('tecnicoHora').disabled = !tecnicoEnabled;
-  document.getElementById('resultadoTecnico').disabled = !tecnicoEnabled;
-
-  // P/2 enabled only if técnico has data and resultado
-  const p2Enabled = tecnicoEnabled && tecnicoData && resultadoTecnico && resultadoTecnico !== 'aguardando';
-  document.getElementById('msgP2').disabled = !p2Enabled;
-  document.getElementById('resultadoP2').disabled = !p2Enabled;
-
-  // Encaminhado enabled only if P/2 has msg and resultado
-  const encEnabled = p2Enabled && msgP2 && resultadoP2 && resultadoP2 !== 'aguardando';
-  document.getElementById('encMovimentacao').disabled = !encEnabled;
-
-  // Movimentação enabled only if encaminhado is filled
-  const movEnabled = encEnabled && encMovimentacao;
-  document.getElementById('movimentadoData').disabled = !movEnabled;
+  const encaminhado = encaminhadoCheck.checked;
+  
+  // Show sections based on user role and previous completion
+  if (currentUser) {
+    // Psicológico always visible for psicologico and stq
+    const showPsico = currentUser.perfil === 'psicologico' || currentUser.perfil === 'stq';
+    document.getElementById('psicologicoSection').style.display = showPsico ? 'block' : 'none';
+    document.getElementById('psicologicoFields').style.display = showPsico ? 'block' : 'none';
+    
+    // Técnico visible if psico is favorável and user is stq
+    const showTecnico = currentUser.perfil === 'stq' && resultado === 'favoravel';
+    document.getElementById('tecnicoSection').style.display = showTecnico ? 'block' : 'none';
+    document.getElementById('tecnicoFields').style.display = showTecnico ? 'block' : 'none';
+    
+    // P/2 visible if técnico is favorável and user is p2 or stq
+    const showP2 = (currentUser.perfil === 'p2' || currentUser.perfil === 'stq') && 
+                   (resultado === 'favoravel' && resultadoTecnico === 'favoravel');
+    document.getElementById('p2Section').style.display = showP2 ? 'block' : 'none';
+    document.getElementById('p2Fields').style.display = showP2 ? 'block' : 'none';
+    
+    // Encaminhado visible if P/2 is positivo and user is stq
+    const showEnc = currentUser.perfil === 'stq' && 
+                    resultado === 'favoravel' && 
+                    resultadoTecnico === 'favoravel' && 
+                    resultadoP2 === 'positivo';
+    document.getElementById('encaminhadoSection').style.display = showEnc ? 'block' : 'none';
+    document.getElementById('encaminhadoFields').style.display = showEnc ? 'block' : 'none';
+    
+    // Movimentação visible if encaminhado is checked and user is stq
+    const showMov = currentUser.perfil === 'stq' && encaminhado;
+    document.getElementById('movimentacaoSection').style.display = showMov ? 'block' : 'none';
+    document.getElementById('movimentacaoFields').style.display = showMov ? 'block' : 'none';
+  }
 }
 
 // Fechar modal
@@ -208,14 +458,10 @@ function temReprovacao(cadastro) {
          etapaReprovada(cadastro, 'tecnico');
 }
 
-// Add listeners to form fields for sequential enabling
-document.getElementById('psicologoData').addEventListener('change', updateFieldStates);
-document.getElementById('resultado').addEventListener('change', updateFieldStates);
-document.getElementById('tecnicoData').addEventListener('change', updateFieldStates);
-document.getElementById('resultadoTecnico').addEventListener('change', updateFieldStates);
-document.getElementById('msgP2').addEventListener('input', updateFieldStates);
-document.getElementById('resultadoP2').addEventListener('change', updateFieldStates);
-document.getElementById('encMovimentacao').addEventListener('input', updateFieldStates);
+// Add listeners to form fields for sequential phase visibility
+document.getElementById('resultado').addEventListener('change', updateSequentialPhases);
+document.getElementById('resultadoTecnico').addEventListener('change', updateSequentialPhases);
+document.getElementById('resultadoP2').addEventListener('change', updateSequentialPhases);
 
 // Submeter formulário
 form.addEventListener('submit', async (e) => {
@@ -230,6 +476,20 @@ form.addEventListener('submit', async (e) => {
   const foneFixo = document.getElementById('foneFixo').value;
   if (foneFixo && foneFixo.length !== 10) {
     alert('O Fone Fixo deve ter exatamente 10 dígitos');
+    return;
+  }
+
+  // Check for duplicate RE
+  const re = document.getElementById('re').value.toUpperCase();
+  const editId = document.getElementById('editId').value;
+  
+  const duplicateRecord = todosOsCadastros.find(c => 
+    c.re === re && c.id !== editId
+  );
+  
+  if (duplicateRecord) {
+    alert(`Já existe um cadastro com o RE ${re}!\n\nCandidato: ${duplicateRecord.nome}\nGraduação: ${duplicateRecord.graduacao}`);
+    showTimeline(duplicateRecord.id);
     return;
   }
 
@@ -253,12 +513,10 @@ form.addEventListener('submit', async (e) => {
     tecnicoData: document.getElementById('tecnicoData').value,
     tecnicoHora: document.getElementById('tecnicoHora').value,
     resultadoTecnico: document.getElementById('resultadoTecnico').value || 'aguardando',
-    encMovimentacao: document.getElementById('encMovimentacao').value.toUpperCase(),
-    movimentadoData: document.getElementById('movimentadoData').value,
+    encaminhadoData: encaminhadoCheck.checked ? new Date().toISOString() : null,
+    movimentadoData: movimentadoCheck.checked ? new Date().toISOString() : null,
     criadoEm: new Date().toISOString()
   };
-
-  const editId = document.getElementById('editId').value;
 
   try {
     if (editId) {
@@ -303,13 +561,14 @@ function getValidadeStatus(cadastro) {
 function criarEtapaPsicologo(cadastro) {
   const temData = !!cadastro.psicologoData;
   const resultado = cadastro.resultado || '';
-  const validadeStatus = getValidadeStatus(cadastro);
+  const diasRestantes = calcularDiasRestantes(cadastro);
   
   let classe = 'stage';
   let simbolo = '○';
   
   if (resultado === 'favoravel') {
-    if (validadeStatus === 'INVALIDO') {
+    if (diasRestantes === 0) {
+      // Expired favorável - yellow warning
       classe = 'stage warning';
       simbolo = '⚠';
     } else {
@@ -317,8 +576,9 @@ function criarEtapaPsicologo(cadastro) {
       simbolo = '✓';
     }
   } else if (resultado === 'desfavoravel') {
-    if (validadeStatus === 'RETESTE') {
-      classe = 'stage warning';
+    if (diasRestantes === 0) {
+      // Expired desfavorável - blue
+      classe = 'stage info';
       simbolo = '↻';
     } else {
       classe = 'stage rejected';
@@ -378,7 +638,7 @@ function criarEtapaTecnico(cadastro) {
 
 // Criar ícone de Encaminhado
 function criarEtapaEncaminhado(cadastro) {
-  const temEnc = !!cadastro.encMovimentacao;
+  const temEnc = !!cadastro.encaminhadoData;
   const classe = temEnc ? 'stage completed' : 'stage';
   const simbolo = temEnc ? '✓' : '○';
   return `<span class="${classe}">${simbolo}</span>`;
@@ -397,7 +657,7 @@ function semEtapasPreenchidas(cadastro) {
   return !cadastro.psicologoData && 
          !cadastro.msgP2 && 
          !cadastro.tecnicoData && 
-         !cadastro.encMovimentacao && 
+         !cadastro.encaminhadoData && 
          !cadastro.movimentadoData;
 }
 
@@ -412,7 +672,7 @@ function etapaConcluida(cadastro, etapa) {
   } else if (etapa === 'p2') {
     return (cadastro.resultadoP2 || 'aguardando') === 'positivo';
   } else if (etapa === 'encaminhado') {
-    return !!cadastro.encMovimentacao;
+    return !!cadastro.encaminhadoData;
   } else if (etapa === 'movimentado') {
     return !!cadastro.movimentadoData;
   }
@@ -491,20 +751,67 @@ function filtrarCadastros(cadastros) {
   const concluidaChecked = checkConcluida.checked;
   const agendadaChecked = checkAgendada.checked;
   const reprovadaChecked = checkReprovada.checked;
-  const tempo = filtroTempo.value;
+  const inicio = dataInicio.value;
+  const fim = dataFim.value;
+  const reSearch = searchRE.value.trim().toUpperCase();
   
   return cadastros.filter(cadastro => {
-    // Filtro de tempo
-    if (tempo) {
+    // RE search filter
+    if (reSearch && !cadastro.re.includes(reSearch)) {
+      return false;
+    }
+    
+    // Psico reteste filter (blue square)
+    if (psicoRetesteFilter) {
+      const diasRestantes = calcularDiasRestantes(cadastro);
+      if (!(cadastro.resultado === 'desfavoravel' && diasRestantes === 0)) {
+        return false;
+      }
+    }
+    
+    // Psico expiring filter (orange triangle)
+    if (psicoExpiringFilter) {
+      const diasRestantes = calcularDiasRestantes(cadastro);
+      if (!(cadastro.resultado === 'favoravel' && diasRestantes === 0)) {
+        return false;
+      }
+    }
+    
+    // Filtro de data
+    if (inicio || fim) {
       const criadoEm = cadastro.criadoEm ? new Date(cadastro.criadoEm) : null;
       if (!criadoEm) return false;
       
-      const hoje = new Date();
-      const diasNoSistema = Math.floor((hoje - criadoEm) / (1000 * 60 * 60 * 24));
-      const periodoMaximo = parseInt(tempo) * 30;
+      const dataCadastro = new Date(criadoEm.getFullYear(), criadoEm.getMonth(), criadoEm.getDate());
       
-      // Records must be within 0 to periodoMaximo days old
-      if (diasNoSistema < 0 || diasNoSistema > periodoMaximo) return false;
+      if (inicio) {
+        const dataInicioObj = new Date(inicio);
+        if (dataCadastro < dataInicioObj) return false;
+      }
+      
+      if (fim) {
+        const dataFimObj = new Date(fim);
+        if (dataCadastro > dataFimObj) return false;
+      }
+    }
+    
+    // Filter for p2 and psicologico users
+    if (currentUser && (currentUser.perfil === 'p2' || currentUser.perfil === 'psicologico')) {
+      if (currentUser.perfil === 'psicologico') {
+        // Show only records awaiting psychological result or completed psico but tecnico not scheduled/started
+        const psicoPendente = cadastro.psicologoData && !cadastro.resultado;
+        const psicoCompletoSemProximaFase = cadastro.resultado && !cadastro.tecnicoData;
+        if (!psicoPendente && !psicoCompletoSemProximaFase) return false;
+      } else if (currentUser.perfil === 'p2') {
+        // Must have reached P/2 phase (psico and tecnico must be favoravel)
+        const chegouP2 = cadastro.resultado === 'favoravel' && cadastro.resultadoTecnico === 'favoravel';
+        if (!chegouP2) return false;
+        
+        // Show only records awaiting P/2 result or completed P/2 but encaminhado not done
+        const p2Pendente = cadastro.msgP2 && (cadastro.resultadoP2 === 'aguardando' || !cadastro.resultadoP2);
+        const p2CompletoSemProximaFase = cadastro.resultadoP2 && cadastro.resultadoP2 !== 'aguardando' && !cadastro.encaminhadoData;
+        if (!p2Pendente && !p2CompletoSemProximaFase) return false;
+      }
     }
     
     // Filtro de graduação
@@ -593,7 +900,7 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
@@ -601,7 +908,7 @@ function renderizarTabela(cadastros) {
       <td>${criarEtapaMovimentacao(cadastro)}</td>
       <td class="actions">
         <button class="btn-edit" onclick="editarCadastro('${cadastro.id}')">Editar</button>
-        <button class="btn-delete" onclick="deletarCadastro('${cadastro.id}')">Excluir</button>
+        ${currentUser && currentUser.perfil === 'stq' ? `<button class="btn-delete" onclick="deletarCadastro('${cadastro.id}')">Excluir</button>` : ''}
       </td>
     `;
     
@@ -793,11 +1100,202 @@ checkReprovada.addEventListener('change', () => {
   renderizarTabela(cadastrosFiltrados);
 });
 
-// Atualizar ao mudar tempo
-filtroTempo.addEventListener('change', () => {
+// Atualizar ao mudar data
+dataInicio.addEventListener('change', () => {
   const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
   renderizarTabela(cadastrosFiltrados);
 });
+
+dataFim.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+// Filter by psico reteste (blue square)
+filterPsicoReteste.addEventListener('click', () => {
+  psicoRetesteFilter = !psicoRetesteFilter;
+  filterPsicoReteste.classList.toggle('active', psicoRetesteFilter);
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+// Filter by psico expiring (orange triangle)
+filterPsicoExpiring.addEventListener('click', () => {
+  psicoExpiringFilter = !psicoExpiringFilter;
+  filterPsicoExpiring.classList.toggle('active', psicoExpiringFilter);
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+// Search by RE
+searchRE.addEventListener('input', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+  
+  // If only one result and RE is complete, show timeline
+  if (cadastrosFiltrados.length === 1 && searchRE.value.trim().length >= 5) {
+    showTimeline(cadastrosFiltrados[0].id);
+  }
+});
+
+// Close timeline modal
+closeTimelineBtn.addEventListener('click', () => {
+  timelineModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+  if (e.target === timelineModal) {
+    timelineModal.style.display = 'none';
+  }
+});
+
+// Show timeline
+function showTimeline(id) {
+  const cadastro = todosOsCadastros.find(c => c.id === id);
+  if (!cadastro) return;
+  
+  timelineContent.innerHTML = `
+    <div style="margin-bottom: 24px; padding: 16px; background: #e2e8f0; border-radius: 8px;">
+      <h3 style="margin-bottom: 8px;">${cadastro.graduacao} ${cadastro.nome}</h3>
+      <p>RE: ${cadastro.re}-${cadastro.digito}</p>
+      <p>Email: ${cadastro.email}</p>
+      <p>WhatsApp: ${formatarTelefone(cadastro.whatsapp)}</p>
+      <p>Unidade: ${cadastro.unidade}</p>
+    </div>
+  `;
+  
+  // Psicológico
+  if (cadastro.psicologoData) {
+    const diasRestantes = calcularDiasRestantes(cadastro);
+    let status = '';
+    let icon = '📋';
+    
+    if (cadastro.resultado === 'favoravel') {
+      if (diasRestantes === 0) {
+        status = 'Favorável (INVÁLIDO - Expirado)';
+        icon = '⚠';
+      } else {
+        status = `Favorável (${diasRestantes} dias restantes)`;
+        icon = '✓';
+      }
+    } else if (cadastro.resultado === 'desfavoravel') {
+      if (diasRestantes === 0) {
+        status = 'Desfavorável (RETESTE - Expirado)';
+        icon = '↻';
+      } else {
+        status = `Desfavorável (${diasRestantes} dias restantes)`;
+        icon = '✗';
+      }
+    } else {
+      status = 'Agendado';
+      icon = '○';
+    }
+    
+    timelineContent.innerHTML += `
+      <div class="timeline-item">
+        <div class="timeline-icon">${icon}</div>
+        <div class="timeline-details">
+          <h3>Psicológico</h3>
+          <p>Data: ${new Date(cadastro.psicologoData).toLocaleDateString('pt-BR')}</p>
+          ${cadastro.psicologoHora ? `<p>Hora: ${cadastro.psicologoHora}</p>` : ''}
+          <p>Status: ${status}</p>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Técnico
+  if (cadastro.tecnicoData) {
+    let status = '';
+    let icon = '📋';
+    
+    if (cadastro.resultadoTecnico === 'favoravel') {
+      status = 'Favorável';
+      icon = '✓';
+    } else if (cadastro.resultadoTecnico === 'desfavoravel') {
+      status = 'Desfavorável';
+      icon = '✗';
+    } else if (cadastro.resultadoTecnico === 'nao_compareceu') {
+      status = 'Não Compareceu';
+      icon = '✗';
+    } else if (cadastro.resultadoTecnico === 'desistiu') {
+      status = 'Desistiu';
+      icon = '✗';
+    } else {
+      status = 'Aguardando';
+      icon = '○';
+    }
+    
+    timelineContent.innerHTML += `
+      <div class="timeline-item">
+        <div class="timeline-icon">${icon}</div>
+        <div class="timeline-details">
+          <h3>Técnico</h3>
+          <p>Data: ${new Date(cadastro.tecnicoData).toLocaleDateString('pt-BR')}</p>
+          ${cadastro.tecnicoHora ? `<p>Hora: ${cadastro.tecnicoHora}</p>` : ''}
+          <p>Status: ${status}</p>
+        </div>
+      </div>
+    `;
+  }
+  
+  // P/2
+  if (cadastro.msgP2) {
+    let status = '';
+    let icon = '📋';
+    
+    if (cadastro.resultadoP2 === 'positivo') {
+      status = 'Positivo';
+      icon = '✓';
+    } else if (cadastro.resultadoP2 === 'nao_retornou') {
+      status = 'Não Retornou';
+      icon = '✗';
+    } else {
+      status = 'Aguardando';
+      icon = '○';
+    }
+    
+    timelineContent.innerHTML += `
+      <div class="timeline-item">
+        <div class="timeline-icon">${icon}</div>
+        <div class="timeline-details">
+          <h3>P/2</h3>
+          <p>Mensagem: ${cadastro.msgP2}</p>
+          ${cadastro.msgP2Timestamp ? `<p>Enviado em: ${new Date(cadastro.msgP2Timestamp).toLocaleString('pt-BR')}</p>` : ''}
+          <p>Status: ${status}</p>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Encaminhado
+  if (cadastro.encaminhadoData) {
+    timelineContent.innerHTML += `
+      <div class="timeline-item">
+        <div class="timeline-icon">✓</div>
+        <div class="timeline-details">
+          <h3>Encaminhado</h3>
+          <p>Data: ${new Date(cadastro.encaminhadoData).toLocaleString('pt-BR')}</p>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Movimentado
+  if (cadastro.movimentadoData) {
+    timelineContent.innerHTML += `
+      <div class="timeline-item">
+        <div class="timeline-icon">✓</div>
+        <div class="timeline-details">
+          <h3>Movimentação</h3>
+          <p>Data: ${new Date(cadastro.movimentadoData).toLocaleString('pt-BR')}</p>
+        </div>
+      </div>
+    `;
+  }
+  
+  timelineModal.style.display = 'block';
+}
 
 // Formatar telefone
 function formatarTelefone(telefone) {
@@ -826,6 +1324,17 @@ window.editarCadastro = (id) => {
       document.getElementById('whatsapp').value = cadastro.whatsapp || cadastro.telefone || '';
       document.getElementById('foneFixo').value = cadastro.foneFixo || '';
       document.getElementById('unidade').value = cadastro.unidade;
+      
+      // Make registration fields readonly for p2 and psicologico users
+      const isRestrictedUser = currentUser && (currentUser.perfil === 'p2' || currentUser.perfil === 'psicologico');
+      document.getElementById('graduacao').disabled = isRestrictedUser;
+      document.getElementById('re').readOnly = isRestrictedUser;
+      document.getElementById('digito').readOnly = isRestrictedUser;
+      document.getElementById('nome').readOnly = isRestrictedUser;
+      document.getElementById('email').readOnly = isRestrictedUser;
+      document.getElementById('whatsapp').readOnly = isRestrictedUser;
+      document.getElementById('foneFixo').readOnly = isRestrictedUser;
+      document.getElementById('unidade').readOnly = isRestrictedUser;
       document.getElementById('psicologoData').value = cadastro.psicologoData || '';
       document.getElementById('psicologoHora').value = cadastro.psicologoHora || '';
       document.getElementById('resultado').value = cadastro.resultado || '';
@@ -852,11 +1361,25 @@ window.editarCadastro = (id) => {
       }
       
       document.getElementById('resultadoP2').value = cadastro.resultadoP2 || '';
-      document.getElementById('encMovimentacao').value = cadastro.encMovimentacao || '';
-      document.getElementById('movimentadoData').value = cadastro.movimentadoData || '';
+      
+      // Set encaminhado checkbox
+      encaminhadoCheck.checked = !!cadastro.encaminhadoData;
+      if (cadastro.encaminhadoData) {
+        encaminhadoTimestamp.textContent = `Encaminhado em: ${new Date(cadastro.encaminhadoData).toLocaleString('pt-BR')}`;
+      } else {
+        encaminhadoTimestamp.textContent = '';
+      }
+      
+      // Set movimentado checkbox
+      movimentadoCheck.checked = !!cadastro.movimentadoData;
+      if (cadastro.movimentadoData) {
+        movimentadoTimestamp.textContent = `Movimentado em: ${new Date(cadastro.movimentadoData).toLocaleString('pt-BR')}`;
+      } else {
+        movimentadoTimestamp.textContent = '';
+      }
       
       stageSections.style.display = 'block'; // Show stages for editing
-      updateFieldStates(); // Enable/disable fields based on sequential logic
+      updateSequentialPhases(); // Show/hide phases based on role and completion
       modal.style.display = 'block';
     }
   }, { onlyOnce: true });
@@ -864,6 +1387,10 @@ window.editarCadastro = (id) => {
 
 // Deletar
 window.deletarCadastro = (id) => {
+  if (currentUser && currentUser.perfil !== 'stq') {
+    alert('Apenas administradores podem excluir cadastros!');
+    return;
+  }
   if (confirm('Deseja realmente excluir este cadastro?')) {
     remove(ref(database, `cadastros/${id}`));
   }
@@ -1027,7 +1554,7 @@ exportEmailBtn.addEventListener('click', () => {
     corpo += `Psicológico: ${getStatusText(c, 'psicologo')}\n`;
     corpo += `Técnico: ${getStatusText(c, 'tecnico')}\n`;
     corpo += `P/2: ${getStatusText(c, 'p2')}\n`;
-    corpo += `Encaminhado: ${c.encMovimentacao ? 'Sim' : 'Não'}\n`;
+    corpo += `Encaminhado: ${c.encaminhadoData ? 'Sim' : 'Não'}\n`;
     corpo += `Movimentado: ${c.movimentadoData ? 'Sim' : 'Não'}\n`;
     corpo += '\n---\n\n';
   });

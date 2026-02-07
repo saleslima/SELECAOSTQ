@@ -9,14 +9,38 @@
 </head>
 <body>
   <div class="lightning-bolt">⚡</div>
-  <div class="container">
+  
+  <div id="loginModal" class="modal" style="display: block;">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2>Login do Sistema</h2>
+      </div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Usuário</label>
+          <input type="text" id="loginUsuario" required>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="loginSenha" required>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" style="width: 100%;">Entrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="container" id="mainContainer" style="display: none;">
     <div class="header">
       <h1 class="animated-title">SEÇÃO DE QUALIDADE E TREINAMENTO ⚡</h1>
       <div class="header-actions">
         <div id="totalCadastros" class="total-badge">
           Total: <span id="totalCount">0</span>
         </div>
+        <button id="adminBtn" class="btn-secondary" style="margin-right: 10px;">👤 Admin</button>
         <button id="darkModeBtn" class="btn-secondary" style="margin-right: 10px;">🌙</button>
+        <button id="logoutBtn" class="btn-secondary" style="margin-right: 10px;">🚪 Sair</button>
         <button id="newBtn" class="btn-primary">Novo Cadastro</button>
       </div>
     </div>
@@ -36,6 +60,8 @@
           <input type="checkbox" id="checkConcluida" class="status-checkbox green" title="Concluída">
           <input type="checkbox" id="checkAgendada" class="status-checkbox yellow" title="Agendada">
           <input type="checkbox" id="checkReprovada" class="status-checkbox red" title="Reprovada">
+          <button id="filterPsicoReteste" class="icon-filter blue-square" title="Psicológico Reteste">■</button>
+          <button id="filterPsicoExpiring" class="icon-filter orange-triangle" title="Psicológico Expirando">⚠</button>
         </div>
       </div>
 
@@ -54,22 +80,18 @@
       </div>
 
       <div class="filter-group">
-        <label>Tempo</label>
-        <select id="filtroTempo">
-          <option value="">Todos</option>
-          <option value="1">01 (30 dias)</option>
-          <option value="2">02 (60 dias)</option>
-          <option value="3">03 (90 dias)</option>
-          <option value="4">04 (120 dias)</option>
-          <option value="5">05 (150 dias)</option>
-          <option value="6">06 (180 dias)</option>
-          <option value="7">07 (210 dias)</option>
-          <option value="8">08 (240 dias)</option>
-          <option value="9">09 (270 dias)</option>
-          <option value="10">10 (300 dias)</option>
-          <option value="11">11 (330 dias)</option>
-          <option value="12">12 (360 dias)</option>
-        </select>
+        <label>Data Início</label>
+        <input type="date" id="dataInicio">
+      </div>
+
+      <div class="filter-group">
+        <label>Data Fim</label>
+        <input type="date" id="dataFim">
+      </div>
+
+      <div class="filter-group">
+        <label>Buscar por RE</label>
+        <input type="text" id="searchRE" placeholder="Digite o RE">
       </div>
 
       <div class="export-buttons">
@@ -143,78 +165,94 @@
           </div>
 
           <div id="stageSections">
-          <div class="section-title">Psicológico</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Data do Agendamento</label>
-              <input type="date" id="psicologoData">
+          <div id="psicologicoSection" class="section-title">Psicológico</div>
+          <div id="psicologicoFields">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Data do Agendamento</label>
+                <input type="date" id="psicologoData">
+              </div>
+              <div class="form-group">
+                <label>Hora do Agendamento</label>
+                <input type="time" id="psicologoHora">
+              </div>
             </div>
-            <div class="form-group">
-              <label>Hora do Agendamento</label>
-              <input type="time" id="psicologoHora">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Resultado</label>
+                <select id="resultado">
+                  <option value="">Selecione...</option>
+                  <option value="favoravel">Favorável</option>
+                  <option value="desfavoravel">Desfavorável</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Validade (dias restantes)</label>
+                <input type="text" id="validade" readonly>
+              </div>
             </div>
           </div>
-          <div class="form-row">
+
+          <div id="tecnicoSection" class="section-title" style="display: none;">Técnico</div>
+          <div id="tecnicoFields" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Data do Agendamento</label>
+                <input type="date" id="tecnicoData">
+              </div>
+              <div class="form-group">
+                <label>Hora do Agendamento</label>
+                <input type="time" id="tecnicoHora">
+              </div>
+            </div>
             <div class="form-group">
-              <label>Resultado</label>
-              <select id="resultado">
-                <option value="">Selecione...</option>
+              <label>Resultado Técnico</label>
+              <select id="resultadoTecnico">
+                <option value="aguardando">Aguardando</option>
                 <option value="favoravel">Favorável</option>
                 <option value="desfavoravel">Desfavorável</option>
+                <option value="nao_compareceu">Não Compareceu</option>
+                <option value="desistiu">Desistiu</option>
               </select>
             </div>
+          </div>
+
+          <div id="p2Section" class="section-title" style="display: none;">P/2</div>
+          <div id="p2Fields" style="display: none;">
             <div class="form-group">
-              <label>Validade (dias restantes)</label>
-              <input type="text" id="validade" readonly>
+              <label>MSG P/2</label>
+              <input type="text" id="msgP2">
+              <small id="msgP2Timestamp"></small>
+            </div>
+            <div class="form-group">
+              <label>Resultado P/2</label>
+              <select id="resultadoP2">
+                <option value="aguardando">Aguardando</option>
+                <option value="positivo">Positivo</option>
+                <option value="nao_retornou">Não Retornou</option>
+              </select>
             </div>
           </div>
 
-          <div class="section-title">Técnico</div>
-          <div class="form-row">
+          <div id="encaminhadoSection" class="section-title" style="display: none;">Encaminhado</div>
+          <div id="encaminhadoFields" style="display: none;">
             <div class="form-group">
-              <label>Data do Agendamento</label>
-              <input type="date" id="tecnicoData">
+              <label>
+                <input type="checkbox" id="encaminhadoCheck" style="width: auto; margin-right: 8px;">
+                Marcar como Encaminhado
+              </label>
+              <small id="encaminhadoTimestamp"></small>
             </div>
-            <div class="form-group">
-              <label>Hora do Agendamento</label>
-              <input type="time" id="tecnicoHora">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Resultado Técnico</label>
-            <select id="resultadoTecnico">
-              <option value="aguardando">Aguardando</option>
-              <option value="favoravel">Favorável</option>
-              <option value="desfavoravel">Desfavorável</option>
-              <option value="nao_compareceu">Não Compareceu</option>
-              <option value="desistiu">Desistiu</option>
-            </select>
           </div>
 
-          <div class="section-title">P/2</div>
-          <div class="form-group">
-            <label>MSG P/2</label>
-            <input type="text" id="msgP2">
-            <small id="msgP2Timestamp"></small>
-          </div>
-          <div class="form-group">
-            <label>Resultado P/2</label>
-            <select id="resultadoP2">
-              <option value="aguardando">Aguardando</option>
-              <option value="positivo">Positivo</option>
-              <option value="nao_retornou">Não Retornou</option>
-            </select>
-          </div>
-
-          <div class="section-title">Movimentação</div>
-          <div class="form-row">
+          <div id="movimentacaoSection" class="section-title" style="display: none;">Movimentação</div>
+          <div id="movimentacaoFields" style="display: none;">
             <div class="form-group">
-              <label>Enc Movimentação</label>
-              <input type="text" id="encMovimentacao">
-            </div>
-            <div class="form-group">
-              <label>Data Movimentado</label>
-              <input type="date" id="movimentadoData">
+              <label>
+                <input type="checkbox" id="movimentadoCheck" style="width: auto; margin-right: 8px;">
+                Marcar como Movimentado
+              </label>
+              <small id="movimentadoTimestamp"></small>
             </div>
           </div>
 
@@ -328,6 +366,90 @@
         </div>
         <div class="chart-label">Movimentação</div>
         <canvas id="chartMovimentado" width="120" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Gerenciar Usuários</h2>
+        <span class="close-admin">&times;</span>
+      </div>
+      <div style="padding: 24px;">
+        <button id="newUserBtn" class="btn-primary" style="margin-bottom: 20px;">Novo Usuário</button>
+        
+        <div id="usersList">
+          <table style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>RE</th>
+                <th>Email</th>
+                <th>Perfil</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="userFormModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 id="userFormTitle">Novo Usuário</h2>
+        <span class="close-user-form">&times;</span>
+      </div>
+      <form id="userForm">
+        <input type="hidden" id="editUserId">
+        <div class="form-group">
+          <label>Nome *</label>
+          <input type="text" id="userName" required>
+        </div>
+        <div class="form-group">
+          <label>RE *</label>
+          <input type="text" id="userRE" required>
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="userEmail" required>
+        </div>
+        <div class="form-group">
+          <label>Usuário (Login) *</label>
+          <input type="text" id="userLogin" required>
+        </div>
+        <div class="form-group">
+          <label>Senha *</label>
+          <input type="password" id="userPassword" required>
+        </div>
+        <div class="form-group">
+          <label>Perfil *</label>
+          <select id="userPerfil" required>
+            <option value="">Selecione...</option>
+            <option value="psicologico">Psicológico</option>
+            <option value="p2">P/2</option>
+            <option value="stq">STQ (Admin)</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" id="cancelUserBtn" class="btn-secondary">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="timelineModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Timeline do Candidato</h2>
+        <span class="close-timeline">&times;</span>
+      </div>
+      <div id="timelineContent" class="timeline-content">
       </div>
     </div>
   </div>
