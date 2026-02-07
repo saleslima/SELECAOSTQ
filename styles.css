@@ -539,9 +539,15 @@ th {
   text-align: left;
   font-weight: 700;
   font-size: 12px;
-  color: #4a5568;
+  color: #FFD700;
   border-bottom: 2px solid #e2e8f0;
   letter-spacing: 0.5px;
+  /* Yellow with black outline to match titular words */
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000;
 }
 
 td {
@@ -748,8 +754,14 @@ body.dark-mode thead {
 
 body.dark-mode th {
   background: #2d3748;
-  color: #cbd5e0;
+  color: #FFD700;
   border-bottom-color: #4a5568;
+  /* Keep same yellow + black outline in dark mode */
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000;
 }
 
 body.dark-mode td {
