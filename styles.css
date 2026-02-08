@@ -1129,3 +1129,14 @@ body.dark-mode .close-timeline {
 body.dark-mode .close-timeline:hover {
   color: #fff;
 }
+
+body.dark-mode #msgPreview {
+  background: #2d3748 !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode #msgTextarea {
+  background: #2d3748;
+  border-color: #4a5568;
+  color: #f7fafc;
+}

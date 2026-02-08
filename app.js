@@ -362,6 +362,184 @@ msgP2Input.addEventListener('input', (e) => {
   }
 });
 
+// --- P/2 message modal, preview, copy and admin-editable template (persisted in localStorage) ---
+const openMsgBtn = document.getElementById('openMsgBtn');
+const msgModal = document.getElementById('msgModal');
+const msgTextarea = document.getElementById('msgTextarea');
+const msgPreview = document.getElementById('msgPreview');
+const copyMsgBtn = document.getElementById('copyMsgBtn');
+const saveMsgBtn = document.getElementById('saveMsgBtn');
+const previewMsgBtn = document.getElementById('previewMsgBtn');
+const closeMsgBtn = document.getElementById('closeMsgBtn');
+const copyEmailBtn = document.getElementById('copyEmailBtn');
+const copyTemplateBtn = document.getElementById('copyTemplateBtn');
+
+const MSG_TEMPLATE_KEY = 'stq_msg_p2_template';
+// default template
+const defaultTemplate = '{graduacao} {re} {nome} foi aprovado(a) em todas as etapas, ainda deseja trabalhar na nossa unidade COPOM SP?';
+
+// load saved template
+function loadMsgTemplate() {
+  return localStorage.getItem(MSG_TEMPLATE_KEY) || defaultTemplate;
+}
+
+// open modal and populate textarea
+openMsgBtn.addEventListener('click', () => {
+  const template = loadMsgTemplate();
+  msgTextarea.value = template;
+
+  // control edit permission: only admins (stq) can save/edit; others see read-only textarea
+  const canEdit = currentUser && currentUser.perfil === 'stq';
+  msgTextarea.readOnly = !canEdit;
+  saveMsgBtn.style.display = canEdit ? 'inline-block' : 'none';
+
+  msgPreview.innerHTML = '';
+  msgModal.style.display = 'block';
+});
+
+// close modal
+closeMsgBtn.addEventListener('click', () => {
+  msgModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+  if (e.target === msgModal) msgModal.style.display = 'none';
+});
+
+// Build personalized message for a given cadastro object
+function buildMsgFromTemplate(template, cadastro) {
+  if (!cadastro) return template;
+  return template
+    .replace(/{graduacao}/gi, cadastro.graduacao || '')
+    .replace(/{re}/gi, `${cadastro.re}-${cadastro.digito || ''}`.trim())
+    .replace(/{nome}/gi, cadastro.nome || '');
+}
+
+/* preview message using current open cadastro (if editing a cadastro) or using fields in form
+   also populate the email display next to the template and enable copying it */
+previewMsgBtn.addEventListener('click', () => {
+  const template = msgTextarea.value || defaultTemplate;
+  const editId = document.getElementById('editId').value;
+  let cadastro = null;
+  if (editId) {
+    cadastro = todosOsCadastros.find(c => c.id === editId) || null;
+  } else {
+    // fallback to current form fields
+    cadastro = {
+      graduacao: document.getElementById('graduacao').value || '',
+      re: document.getElementById('re').value || '',
+      digito: document.getElementById('digito').value || '',
+      nome: document.getElementById('nome').value || '',
+      email: document.getElementById('email').value || ''
+    };
+  }
+
+  const built = buildMsgFromTemplate(template, cadastro);
+  msgPreview.textContent = built;
+
+  // populate email display next to template
+  const emailDisplay = document.getElementById('msgEmailDisplay');
+  if (emailDisplay) {
+    emailDisplay.value = (cadastro && cadastro.email) ? cadastro.email : '';
+  }
+});
+
+// copy preview (or built message) to clipboard
+copyMsgBtn.addEventListener('click', async () => {
+  const textToCopy = msgPreview.textContent || msgTextarea.value || loadMsgTemplate();
+  try {
+    await navigator.clipboard.writeText(textToCopy);
+    alert('Mensagem copiada para a área de transferência');
+  } catch (err) {
+    // Fallback
+    const tmp = document.createElement('textarea');
+    tmp.value = textToCopy;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    alert('Mensagem copiada (fallback)');
+  }
+});
+
+// save template (admins only)
+saveMsgBtn.addEventListener('click', () => {
+  if (!(currentUser && currentUser.perfil === 'stq')) {
+    alert('Apenas administradores podem salvar o template.');
+    return;
+  }
+  const tpl = msgTextarea.value.trim();
+  if (!tpl) {
+    alert('Template vazio não permitido.');
+    return;
+  }
+  localStorage.setItem(MSG_TEMPLATE_KEY, tpl);
+  alert('Template salvo.');
+});
+
+// Copy email button
+copyEmailBtn.addEventListener('click', async () => {
+  const emailValue = document.getElementById('email').value;
+  if (!emailValue) {
+    alert('Email não preenchido');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(emailValue);
+    alert('Email copiado para a área de transferência');
+  } catch (err) {
+    const tmp = document.createElement('textarea');
+    tmp.value = emailValue;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    alert('Email copiado');
+  }
+});
+
+/* Copy template button */
+copyTemplateBtn.addEventListener('click', async () => {
+  const templateText = msgTextarea.value || loadMsgTemplate();
+  try {
+    await navigator.clipboard.writeText(templateText);
+    alert('Template copiado para a área de transferência');
+  } catch (err) {
+    const tmp = document.createElement('textarea');
+    tmp.value = templateText;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    alert('Template copiado');
+  }
+});
+
+/* Copy email shown in the message modal (next to template) */
+const copyMsgEmailBtnEl = document.getElementById('copyMsgEmailBtn');
+if (copyMsgEmailBtnEl) {
+  copyMsgEmailBtnEl.addEventListener('click', async () => {
+    const emailDisplay = document.getElementById('msgEmailDisplay');
+    const emailToCopy = emailDisplay ? emailDisplay.value : '';
+    if (!emailToCopy) {
+      alert('Nenhum email disponível para copiar.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(emailToCopy);
+      alert('Email copiado para a área de transferência');
+    } catch (err) {
+      const tmp = document.createElement('textarea');
+      tmp.value = emailToCopy;
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      document.body.removeChild(tmp);
+      alert('Email copiado');
+    }
+  });
+}
+
 // Abrir modal
 newBtn.addEventListener('click', () => {
   formTitle.textContent = 'Novo Cadastro';
@@ -922,7 +1100,7 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
