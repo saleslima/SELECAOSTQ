@@ -34,8 +34,8 @@ body::before {
   z-index: 9999;
   pointer-events: none;
   animation: lightningAnimation 5s ease-in-out forwards;
-  color: #FFD700;
-  text-shadow: 0 0 30px #FFD700, 0 0 60px #FFA500;
+  color: rgb(236, 176, 3);
+  text-shadow: 0 0 30px rgb(236, 176, 3), 0 0 60px #FFA500;
 }
 
 @keyframes lightningAnimation {
@@ -135,6 +135,24 @@ body::before {
   min-width: 200px;
 }
 
+.graduation-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.graduation-checkboxes label {
+  font-size: 13px;
+  font-weight: normal;
+  color: #2d3748;
+  text-shadow: none;
+}
+
+body.dark-mode .graduation-checkboxes label {
+  color: #e2e8f0;
+}
+
 .status-checkboxes {
   display: flex;
   gap: 12px;
@@ -164,12 +182,12 @@ body::before {
 }
 
 .status-checkbox.yellow {
-  border-color: #ecc94b;
+  border-color: rgb(236, 176, 3);
   background: white;
 }
 
 .status-checkbox.yellow:checked {
-  background: #ecc94b;
+  background: rgb(236, 176, 3);
 }
 
 .status-checkbox.red {
@@ -300,7 +318,7 @@ h1 {
   }
   100% {
     transform: scale(1);
-    color: #FFD700;
+    color: rgb(236, 176, 3);
     text-shadow: 
       -1px -1px 0 #000,
       1px -1px 0 #000,
@@ -328,7 +346,7 @@ body.dark-mode .animated-title {
   }
   100% {
     transform: scale(1);
-    color: #FFD700;
+    color: rgb(236, 176, 3);
     text-shadow: 
       -1px -1px 0 #000,
       1px -1px 0 #000,
@@ -444,7 +462,7 @@ label {
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: #FFD700;
+  color: rgb(236, 176, 3);
   text-shadow: 
     -1px -1px 0 #000,
     1px -1px 0 #000,
@@ -539,7 +557,7 @@ th {
   text-align: left;
   font-weight: 700;
   font-size: 12px;
-  color: #FFD700;
+  color: rgb(236, 176, 3);
   border-bottom: 2px solid #e2e8f0;
   letter-spacing: 0.5px;
   /* Yellow with black outline to match titular words */
@@ -596,6 +614,25 @@ tr:hover {
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
+.btn-psic-ag {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(66,153,225,0.25);
+}
+
+.btn-psic-ag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(66,153,225,0.35);
+}
+
 .loading,
 .no-data {
   text-align: center;
@@ -629,9 +666,9 @@ tr:hover {
 }
 
 .stage.pending {
-  background: linear-gradient(135deg, #ecc94b 0%, #d69e2e 100%);
+  background: linear-gradient(135deg, rgb(236, 176, 3) 0%, #d69e2e 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(236,201,75,0.3);
+  box-shadow: 0 2px 8px rgba(236,176,3,0.3);
 }
 
 .stage.rejected {
@@ -641,9 +678,9 @@ tr:hover {
 }
 
 .stage.warning {
-  background: linear-gradient(135deg, #ecc94b 0%, #d69e2e 100%);
+  background: linear-gradient(135deg, rgb(236, 176, 3) 0%, #d69e2e 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(236,201,75,0.3);
+  box-shadow: 0 2px 8px rgba(236,176,3,0.3);
 }
 
 .stage.info {
@@ -718,7 +755,7 @@ body.dark-mode h2 {
 }
 
 body.dark-mode label {
-  color: #FFD700;
+  color: rgb(236, 176, 3);
 }
 
 body.dark-mode input[type="text"],
@@ -754,7 +791,7 @@ body.dark-mode thead {
 
 body.dark-mode th {
   background: #2d3748;
-  color: #FFD700;
+  color: rgb(236, 176, 3);
   border-bottom-color: #4a5568;
   /* Keep same yellow + black outline in dark mode */
   text-shadow:
@@ -876,8 +913,8 @@ body.dark-mode .close-stats:hover {
 }
 
 body.dark-mode .lightning-bolt {
-  color: #FFD700;
-  text-shadow: 0 0 30px #FFD700, 0 0 60px #FFA500;
+  color: rgb(236, 176, 3);
+  text-shadow: 0 0 30px rgb(236, 176, 3), 0 0 60px #FFA500;
 }
 
 @media (max-width: 768px) {
@@ -1010,7 +1047,7 @@ body.dark-mode .lightning-bolt {
   font-size: 13px;
   font-weight: 700;
   text-align: center;
-  color: #FFD700;
+  color: rgb(236, 176, 3);
   text-shadow: 
     -1px -1px 0 #000,
     1px -1px 0 #000,
@@ -1029,7 +1066,7 @@ body.dark-mode .stage-charts {
 }
 
 body.dark-mode .chart-label {
-  color: #FFD700;
+  color: rgb(236, 176, 3);
 }
 
 body.dark-mode .glass {
@@ -1130,6 +1167,91 @@ body.dark-mode .close-timeline:hover {
   color: #fff;
 }
 
+.close-psic-ag {
+  color: #999;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-psic-ag:hover {
+  color: #333;
+}
+
+body.dark-mode .close-psic-ag {
+  color: #aaa;
+}
+
+body.dark-mode .close-psic-ag:hover {
+  color: #fff;
+}
+
+.close-today {
+  color: #999;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-today:hover {
+  color: #333;
+}
+
+body.dark-mode .close-today {
+  color: #aaa;
+}
+
+body.dark-mode .close-today:hover {
+  color: #fff;
+}
+
+/* Light Mode */
+body.light-mode {
+  background: #e0e0e0 url('/back.jpg') no-repeat center center fixed;
+  background-size: cover;
+}
+
+body.light-mode::before {
+  background: rgba(224, 224, 224, 0.85);
+}
+
+body.light-mode .header,
+body.light-mode .filters,
+body.light-mode .table-container,
+body.light-mode .modal-content,
+body.light-mode .stage-charts {
+  background: #d0d0d0;
+}
+
+body.light-mode thead {
+  background: #c0c0c0;
+}
+
+body.light-mode th {
+  background: #c0c0c0;
+}
+
+body.light-mode tr:hover {
+  background: #c8c8c8;
+}
+
+body.light-mode input[type="text"],
+body.light-mode input[type="tel"],
+body.light-mode input[type="email"],
+body.light-mode input[type="date"],
+body.light-mode input[type="number"],
+body.light-mode select,
+body.light-mode textarea {
+  background: #e8e8e8;
+  border-color: #b0b0b0;
+}
+
+body.light-mode .timeline-item {
+  background: #c8c8c8;
+}
+
 body.dark-mode #msgPreview {
   background: #2d3748 !important;
   color: #e2e8f0 !important;
@@ -1139,4 +1261,28 @@ body.dark-mode #msgTextarea {
   background: #2d3748;
   border-color: #4a5568;
   color: #f7fafc;
+}
+
+.close-customize,
+.close-admin-settings {
+  color: #999;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-customize:hover,
+.close-admin-settings:hover {
+  color: #333;
+}
+
+body.dark-mode .close-customize,
+body.dark-mode .close-admin-settings {
+  color: #aaa;
+}
+
+body.dark-mode .close-customize:hover,
+body.dark-mode .close-admin-settings:hover {
+  color: #fff;
 }

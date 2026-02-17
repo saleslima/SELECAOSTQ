@@ -36,11 +36,22 @@ const tecnicoHoraInput = document.getElementById('tecnicoHora');
 const resultadoInput = document.getElementById('resultado');
 const whatsappInput = document.getElementById('whatsapp');
 const foneFixoInput = document.getElementById('foneFixo');
-const filtroGraduacao = document.getElementById('filtroGraduacao');
+const filtroSubtenSgt = document.getElementById('filtroSubtenSgt');
+const filtroCbSd = document.getElementById('filtroCbSd');
+const filtroSd2cl = document.getElementById('filtroSd2cl');
+const resultLimit = document.getElementById('resultLimit');
 const filtroEtapa = document.getElementById('filtroEtapa');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
-const exportEmailBtn = document.getElementById('exportEmailBtn');
+const todayBtn = document.getElementById('todayBtn');
 const darkModeBtn = document.getElementById('darkModeBtn');
+const lightModeBtn = document.getElementById('lightModeBtn');
+const todayModal = document.getElementById('todayModal');
+const closeTodayBtn = document.querySelector('.close-today');
+const detalhesHojeBtn = document.getElementById('detalhesHojeBtn');
+const detalhesHojeContent = document.getElementById('detalhesHojeContent');
+const totalHojeEl = document.getElementById('totalHoje');
+const totalManhaEl = document.getElementById('totalManha');
+const totalTardeEl = document.getElementById('totalTarde');
 const totalCountEl = document.getElementById('totalCount');
 const totalBadge = document.getElementById('totalCadastros');
 const statsModal = document.getElementById('statsModal');
@@ -75,10 +86,46 @@ const searchRE = document.getElementById('searchRE');
 const timelineModal = document.getElementById('timelineModal');
 const closeTimelineBtn = document.querySelector('.close-timeline');
 const timelineContent = document.getElementById('timelineContent');
+const psicAgModal = document.getElementById('psicAgModal');
+const closePsicAgBtn = document.querySelector('.close-psic-ag');
+const savePsicAgBtn = document.getElementById('savePsicAgBtn');
+const psicAgDiaSemana = document.getElementById('psicAgDiaSemana');
+const psicAgVagasManha = document.getElementById('psicAgVagasManha');
+const psicAgVagasTarde = document.getElementById('psicAgVagasTarde');
+const psicAgInfoContent = document.getElementById('psicAgInfoContent');
+const customizeBtn = document.getElementById('customizeBtn');
+const customizeModal = document.getElementById('customizeModal');
+const closeCustomizeBtn = document.querySelector('.close-customize');
+const customFontColor = document.getElementById('customFontColor');
+const customFontSize = document.getElementById('customFontSize');
+const customBgColor = document.getElementById('customBgColor');
+const applyCustomBtn = document.getElementById('applyCustomBtn');
+const resetCustomBtn = document.getElementById('resetCustomBtn');
+const adminSettingsModal = document.getElementById('adminSettingsModal');
+const closeAdminSettingsBtn = document.querySelector('.close-admin-settings');
+const adminSettingsBtn = document.getElementById('adminSettingsBtn');
+const saveAdminSettingsBtn = document.getElementById('saveAdminSettingsBtn');
+const validadeAprovadoInput = document.getElementById('validadeAprovado');
+const validadeReprovadoInput = document.getElementById('validadeReprovado');
 
 let todosOsCadastros = [];
 let psicoRetesteFilter = false;
 let psicoExpiringFilter = false;
+let psicAgVagas = {};
+
+// Load psic_ag vacancies from localStorage
+function loadPsicAgVagas() {
+  const saved = localStorage.getItem('psic_ag_vagas');
+  if (saved) {
+    psicAgVagas = JSON.parse(saved);
+  }
+}
+
+function savePsicAgVagas() {
+  localStorage.setItem('psic_ag_vagas', JSON.stringify(psicAgVagas));
+}
+
+loadPsicAgVagas();
 
 // Initialize default users if not exists
 async function initializeDefaultUser() {
@@ -131,10 +178,150 @@ function setupAuthenticatedUI() {
   } else {
     newBtn.style.display = 'inline-block';
   }
+  
+  // Load custom settings after UI is ready
+  loadCustomSettings();
 }
 
 // Run session check on load
 checkSession();
+
+// Load custom settings on page load
+function loadCustomSettings() {
+  const fontColor = localStorage.getItem('customFontColor');
+  const fontSize = localStorage.getItem('customFontSize');
+  const bgColor = localStorage.getItem('customBgColor');
+  
+  const container = document.getElementById('mainContainer');
+  if (!container) return;
+  
+  if (fontColor) {
+    container.style.color = fontColor;
+    customFontColor.value = fontColor;
+  }
+  
+  if (fontSize) {
+    container.style.fontSize = fontSize + 'px';
+    customFontSize.value = fontSize;
+  }
+  
+  if (bgColor) {
+    container.style.backgroundColor = bgColor;
+    customBgColor.value = bgColor;
+  }
+}
+
+// Load admin settings
+function loadAdminSettings() {
+  const validadeAprovado = localStorage.getItem('validadeAprovado');
+  const validadeReprovado = localStorage.getItem('validadeReprovado');
+  
+  if (validadeAprovado) {
+    validadeAprovadoInput.value = validadeAprovado;
+  } else {
+    localStorage.setItem('validadeAprovado', '180');
+  }
+  
+  if (validadeReprovado) {
+    validadeReprovadoInput.value = validadeReprovado;
+  } else {
+    localStorage.setItem('validadeReprovado', '180');
+  }
+}
+
+loadAdminSettings();
+
+// Customize button
+customizeBtn.addEventListener('click', () => {
+  customizeModal.style.display = 'block';
+});
+
+closeCustomizeBtn.addEventListener('click', () => {
+  customizeModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+  if (e.target === customizeModal) {
+    customizeModal.style.display = 'none';
+  }
+  if (e.target === adminSettingsModal) {
+    adminSettingsModal.style.display = 'none';
+  }
+});
+
+// Admin settings button
+adminSettingsBtn.addEventListener('click', () => {
+  loadAdminSettings();
+  adminSettingsModal.style.display = 'block';
+});
+
+closeAdminSettingsBtn.addEventListener('click', () => {
+  adminSettingsModal.style.display = 'none';
+});
+
+// Save admin settings
+saveAdminSettingsBtn.addEventListener('click', () => {
+  const validadeAprovado = validadeAprovadoInput.value;
+  const validadeReprovado = validadeReprovadoInput.value;
+  
+  if (!validadeAprovado || validadeAprovado < 1) {
+    alert('Validade para aprovado deve ser no mínimo 1 dia');
+    return;
+  }
+  
+  if (!validadeReprovado || validadeReprovado < 1) {
+    alert('Validade para reprovado deve ser no mínimo 1 dia');
+    return;
+  }
+  
+  localStorage.setItem('validadeAprovado', validadeAprovado);
+  localStorage.setItem('validadeReprovado', validadeReprovado);
+  
+  adminSettingsModal.style.display = 'none';
+  alert('Configurações salvas com sucesso!');
+});
+
+// Apply custom settings
+applyCustomBtn.addEventListener('click', () => {
+  const fontColor = customFontColor.value;
+  const fontSize = customFontSize.value;
+  const bgColor = customBgColor.value;
+  
+  const container = document.getElementById('mainContainer');
+  if (container) {
+    container.style.color = fontColor;
+    container.style.fontSize = fontSize + 'px';
+    container.style.backgroundColor = bgColor;
+  }
+  
+  localStorage.setItem('customFontColor', fontColor);
+  localStorage.setItem('customFontSize', fontSize);
+  localStorage.setItem('customBgColor', bgColor);
+  
+  customizeModal.style.display = 'none';
+  alert('Personalização aplicada com sucesso!');
+});
+
+// Reset custom settings
+resetCustomBtn.addEventListener('click', () => {
+  localStorage.removeItem('customFontColor');
+  localStorage.removeItem('customFontSize');
+  localStorage.removeItem('customBgColor');
+  
+  const container = document.getElementById('mainContainer');
+  if (container) {
+    container.style.color = '';
+    container.style.fontSize = '';
+    container.style.backgroundColor = '';
+  }
+  
+  customFontColor.value = '#1a1a1a';
+  customFontSize.value = '13';
+  customBgColor.value = '#ffffff';
+  
+  alert('Personalização resetada!');
+  customizeModal.style.display = 'none';
+});
 
 // Login functionality
 loginForm.addEventListener('submit', async (e) => {
@@ -325,10 +512,55 @@ if (isDarkMode) {
 }
 
 darkModeBtn.addEventListener('click', () => {
+  // Clear custom settings
+  localStorage.removeItem('customFontColor');
+  localStorage.removeItem('customFontSize');
+  localStorage.removeItem('customBgColor');
+  const container = document.getElementById('mainContainer');
+  if (container) {
+    container.style.color = '';
+    container.style.fontSize = '';
+    container.style.backgroundColor = '';
+  }
+  
   document.body.classList.toggle('dark-mode');
+  document.body.classList.remove('light-mode');
   const isDark = document.body.classList.contains('dark-mode');
   localStorage.setItem('darkMode', isDark);
+  localStorage.setItem('lightMode', 'false');
   darkModeBtn.textContent = isDark ? '☀️' : '🌙';
+  
+  loadCustomSettings();
+});
+
+// Light Mode Logic
+const isLightMode = localStorage.getItem('lightMode') === 'true';
+if (isLightMode) {
+  document.body.classList.add('light-mode');
+}
+
+lightModeBtn.addEventListener('click', () => {
+  // Clear custom settings
+  localStorage.removeItem('customFontColor');
+  localStorage.removeItem('customFontSize');
+  localStorage.removeItem('customBgColor');
+  const container = document.getElementById('mainContainer');
+  if (container) {
+    container.style.color = '';
+    container.style.fontSize = '';
+    container.style.backgroundColor = '';
+  }
+  
+  document.body.classList.toggle('light-mode');
+  document.body.classList.remove('dark-mode');
+  const isLight = document.body.classList.contains('light-mode');
+  localStorage.setItem('lightMode', isLight);
+  localStorage.setItem('darkMode', 'false');
+  if (isLight) {
+    darkModeBtn.textContent = '🌙';
+  }
+  
+  loadCustomSettings();
 });
 
 // Validar whatsapp e fone fixo - apenas números
@@ -340,11 +572,14 @@ foneFixoInput.addEventListener('input', (e) => {
   e.target.value = e.target.value.replace(/\D/g, '');
 });
 
-// Calcular validade automaticamente (180 dias) quando resultado é preenchido
+// Calcular validade automaticamente quando resultado é preenchido
 resultadoInput.addEventListener('change', (e) => {
-  if (e.target.value && (e.target.value === 'favoravel' || e.target.value === 'desfavoravel')) {
-    // Set validade to 180 days from today
-    validadeInput.value = '180';
+  if (e.target.value === 'favoravel') {
+    const validadeAprovado = localStorage.getItem('validadeAprovado') || '180';
+    validadeInput.value = validadeAprovado;
+  } else if (e.target.value === 'desfavoravel') {
+    const validadeReprovado = localStorage.getItem('validadeReprovado') || '180';
+    validadeInput.value = validadeReprovado;
   } else {
     validadeInput.value = '';
   }
@@ -563,18 +798,18 @@ function updateSequentialPhases() {
     document.getElementById('psicologicoSection').style.display = showPsico ? 'block' : 'none';
     document.getElementById('psicologicoFields').style.display = showPsico ? 'block' : 'none';
     
-    // Técnico visible if psico is favorável and user is stq
+    // Técnico visible ONLY if psico is favorável and user is stq
     const showTecnico = currentUser.perfil === 'stq' && resultado === 'favoravel';
     document.getElementById('tecnicoSection').style.display = showTecnico ? 'block' : 'none';
     document.getElementById('tecnicoFields').style.display = showTecnico ? 'block' : 'none';
     
-    // P/2 visible if técnico is favorável and user is p2 or stq
+    // P/2 visible ONLY if psico AND técnico are both favorável and user is p2 or stq
     const showP2 = (currentUser.perfil === 'p2' || currentUser.perfil === 'stq') && 
                    (resultado === 'favoravel' && resultadoTecnico === 'favoravel');
     document.getElementById('p2Section').style.display = showP2 ? 'block' : 'none';
     document.getElementById('p2Fields').style.display = showP2 ? 'block' : 'none';
     
-    // Encaminhado visible if P/2 is positivo and user is stq
+    // Encaminhado visible ONLY if all previous are favorável/positivo and user is stq
     const showEnc = currentUser.perfil === 'stq' && 
                     resultado === 'favoravel' && 
                     resultadoTecnico === 'favoravel' && 
@@ -693,29 +928,52 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+  const psicDataValue = document.getElementById('psicologoData').value;
+  const psicHoraValue = document.getElementById('psicologoHora').value;
+  const tecDataValue = document.getElementById('tecnicoData').value;
+  const tecHoraValue = document.getElementById('tecnicoHora').value;
+
+  // Decrease vacancy if psychologist is being scheduled
+  if (psicDataValue && psicHoraValue && !editId) {
+    const dataObj = new Date(psicDataValue);
+    const diaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][dataObj.getDay()];
+    const periodo = parseInt(psicHoraValue.split(':')[0]) < 12 ? 'manha' : 'tarde';
+    
+    const key = `${diaSemana}_${periodo}`;
+    if (psicAgVagas[key] && psicAgVagas[key] > 0) {
+      psicAgVagas[key]--;
+      savePsicAgVagas();
+    }
+  }
+
+  const existingRecord = editId ? todosOsCadastros.find(c => c.id === editId) : null;
+  
   const data = {
     graduacao: document.getElementById('graduacao').value,
     re: document.getElementById('re').value.toUpperCase(),
     digito: document.getElementById('digito').value.toUpperCase(),
     nome: document.getElementById('nome').value.toUpperCase(),
+    indicacao: document.getElementById('indicacao').value.toUpperCase(),
     email: document.getElementById('email').value.toLowerCase(),
     whatsapp: whatsapp,
     foneFixo: foneFixo,
     unidade: document.getElementById('unidade').value.toUpperCase(),
-    psicologoData: document.getElementById('psicologoData').value,
-    psicologoHora: document.getElementById('psicologoHora').value,
+    psicologoData: psicDataValue,
+    psicologoHora: psicHoraValue,
+    psicologoAgendadoEm: psicDataValue && psicHoraValue ? (existingRecord?.psicologoAgendadoEm || new Date().toISOString()) : null,
     resultado: document.getElementById('resultado').value || '',
     validadeInicial: validadeInput.value,
     validadeDataInicio: validadeInput.value ? new Date().toISOString() : null,
     msgP2: document.getElementById('msgP2').value.toUpperCase(),
     msgP2Timestamp: msgP2Timestamp,
     resultadoP2: document.getElementById('resultadoP2').value || 'aguardando',
-    tecnicoData: document.getElementById('tecnicoData').value,
-    tecnicoHora: document.getElementById('tecnicoHora').value,
+    tecnicoData: tecDataValue,
+    tecnicoHora: tecHoraValue,
+    tecnicoAgendadoEm: tecDataValue && tecHoraValue ? (existingRecord?.tecnicoAgendadoEm || new Date().toISOString()) : null,
     resultadoTecnico: document.getElementById('resultadoTecnico').value || 'aguardando',
     encaminhadoData: encaminhadoCheck.checked ? new Date().toISOString() : null,
     movimentadoData: movimentadoCheck.checked ? new Date().toISOString() : null,
-    criadoEm: new Date().toISOString()
+    criadoEm: editId ? (existingRecord?.criadoEm || new Date().toISOString()) : new Date().toISOString()
   };
 
   try {
@@ -775,7 +1033,7 @@ function criarEtapaPsicologo(cadastro) {
       classe = 'stage completed';
       simbolo = '✓';
     }
-  } else if (resultado === 'desfavoravel') {
+  } else if (resultado === 'desfavoravel' || resultado === 'faltou') {
     if (diasRestantes === 0) {
       // Expired desfavorável - blue
       classe = 'stage info';
@@ -895,7 +1153,7 @@ function etapaAgendada(cadastro, etapa) {
 function etapaReprovada(cadastro, etapa) {
   if (etapa === 'psicologo') {
     const resultado = cadastro.resultado || '';
-    return resultado === 'desfavoravel';
+    return resultado === 'desfavoravel' || resultado === 'faltou';
   } else if (etapa === 'tecnico') {
     const resultado = cadastro.resultadoTecnico || 'aguardando';
     return resultado === 'desfavoravel' || resultado === 'nao_compareceu' || resultado === 'desistiu';
@@ -946,7 +1204,9 @@ function temFaseConcluida(cadastro) {
 
 // Filtrar cadastros
 function filtrarCadastros(cadastros) {
-  const filtroGrad = filtroGraduacao.value;
+  const subtenSgtChecked = filtroSubtenSgt.checked;
+  const cbSdChecked = filtroCbSd.checked;
+  const sd2clChecked = filtroSd2cl.checked;
   const filtroEt = filtroEtapa.value;
   const concluidaChecked = checkConcluida.checked;
   const agendadaChecked = checkAgendada.checked;
@@ -954,8 +1214,9 @@ function filtrarCadastros(cadastros) {
   const inicio = dataInicio.value;
   const fim = dataFim.value;
   const reSearch = searchRE.value.trim().toUpperCase();
+  const limit = resultLimit.value ? parseInt(resultLimit.value) : null;
   
-  return cadastros.filter(cadastro => {
+  let filtered = cadastros.filter(cadastro => {
     // RE search filter
     if (reSearch && !cadastro.re.includes(reSearch)) {
       return false;
@@ -1014,18 +1275,24 @@ function filtrarCadastros(cadastros) {
       }
     }
     
-    // Filtro de graduação
-    if (filtroGrad) {
+    // Filtro de graduação - multiple checkboxes
+    if (subtenSgtChecked || cbSdChecked || sd2clChecked) {
       const grad = cadastro.graduacao.toUpperCase();
-      if (filtroGrad === 'cb_sd') {
-        if (!grad.includes('CB') && !grad.includes('SD') && !grad.includes('CL')) {
-          return false;
-        }
-      } else if (filtroGrad === 'sgt_subten') {
-        if (!grad.includes('SGT') && !grad.includes('SUBTEN')) {
-          return false;
-        }
+      let passaGrad = false;
+      
+      if (subtenSgtChecked && (grad.includes('SGT') || grad.includes('SUBTEN'))) {
+        passaGrad = true;
       }
+      
+      if (cbSdChecked && (grad.includes('CB') || (grad.includes('SD') && !grad.includes('2')))) {
+        passaGrad = true;
+      }
+      
+      if (sd2clChecked && (grad.includes('2') && grad.includes('CL'))) {
+        passaGrad = true;
+      }
+      
+      if (!passaGrad) return false;
     }
     
     // Filtro combinado de etapa e status
@@ -1082,6 +1349,27 @@ function filtrarCadastros(cadastros) {
     
     return true;
   });
+
+  // Sort: indicação first, then oldest date
+  filtered.sort((a, b) => {
+    const aTemIndicacao = !!(a.indicacao && a.indicacao.trim());
+    const bTemIndicacao = !!(b.indicacao && b.indicacao.trim());
+    
+    if (aTemIndicacao && !bTemIndicacao) return -1;
+    if (!aTemIndicacao && bTemIndicacao) return 1;
+    
+    // Both have or both don't have indicação, sort by oldest date
+    const aDate = new Date(a.criadoEm || 0);
+    const bDate = new Date(b.criadoEm || 0);
+    return aDate - bDate;
+  });
+
+  // Apply limit if set
+  if (limit && limit > 0) {
+    filtered = filtered.slice(0, limit);
+  }
+
+  return filtered;
 }
 
 // Renderizar tabela
@@ -1100,7 +1388,7 @@ function renderizarTabela(cadastros) {
       <td>${cadastro.graduacao}</td>
       <td>${cadastro.re}-${cadastro.digito}</td>
       <td>${cadastro.nome}</td>
-      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
+      <td><a href="${whatsappLink}" target="_blank" class="whatsapp-link"><img src="/whatassssss.png" alt="WhatsApp" style="width: 24px; height: 24px; vertical-align: middle;"></a></td>
       <td>${criarEtapaPsicologo(cadastro)}</td>
       <td>${criarEtapaTecnico(cadastro)}</td>
       <td>${criarEtapaP2(cadastro)}</td>
@@ -1109,6 +1397,7 @@ function renderizarTabela(cadastros) {
       <td class="actions">
         <button class="btn-edit" onclick="editarCadastro('${cadastro.id}')">Editar</button>
         ${currentUser && currentUser.perfil === 'stq' ? `<button class="btn-delete" onclick="deletarCadastro('${cadastro.id}')">Excluir</button>` : ''}
+        ${currentUser && currentUser.perfil === 'stq' ? `<button class="btn-psic-ag" onclick="abrirAgendaPsic()">Psic_Ag</button>` : ''}
       </td>
     `;
     
@@ -1275,7 +1564,22 @@ onValue(cadastrosRef, (snapshot) => {
 });
 
 // Atualizar ao mudar filtros
-filtroGraduacao.addEventListener('change', () => {
+filtroSubtenSgt.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+filtroCbSd.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+filtroSd2cl.addEventListener('change', () => {
+  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
+  renderizarTabela(cadastrosFiltrados);
+});
+
+resultLimit.addEventListener('input', () => {
   const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
   renderizarTabela(cadastrosFiltrados);
 });
@@ -1387,6 +1691,9 @@ function showTimeline(id) {
         status = `Desfavorável (${diasRestantes} dias restantes)`;
         icon = '✗';
       }
+    } else if (cadastro.resultado === 'faltou') {
+      status = 'Faltou';
+      icon = '✗';
     } else {
       status = 'Agendado';
       icon = '○';
@@ -1521,6 +1828,7 @@ window.editarCadastro = (id) => {
       document.getElementById('re').value = cadastro.re;
       document.getElementById('digito').value = cadastro.digito;
       document.getElementById('nome').value = cadastro.nome;
+      document.getElementById('indicacao').value = cadastro.indicacao || '';
       document.getElementById('email').value = cadastro.email || '';
       document.getElementById('whatsapp').value = cadastro.whatsapp || cadastro.telefone || '';
       document.getElementById('foneFixo').value = cadastro.foneFixo || '';
@@ -1717,54 +2025,167 @@ deleteFilteredBtn.addEventListener('click', async () => {
   }
 });
 
-// Compartilhar via email
-exportEmailBtn.addEventListener('click', () => {
-  const cadastrosFiltrados = filtrarCadastros(todosOsCadastros);
-  
-  if (cadastrosFiltrados.length === 0) {
-    alert('Nenhum cadastro para compartilhar');
-    return;
-  }
+// Today's appointments button
+todayBtn.addEventListener('click', () => {
+  calculateTodayStats();
+  todayModal.style.display = 'block';
+});
 
-  let corpo = 'Relatório de Recrutamento\n\n';
-  
-  const filtroTexto = [];
-  if (filtroGraduacao.value === 'cb_sd') filtroTexto.push('CB PM e SD PM');
-  if (filtroGraduacao.value === 'sgt_subten') filtroTexto.push('SGT PM e SUBTEN PM');
-  if (filtroEtapa.value === 'psicologo') filtroTexto.push('Psicológico concluído');
-  if (filtroEtapa.value === 'p2') filtroTexto.push('P/2 concluído');
-  if (filtroEtapa.value === 'tecnico') filtroTexto.push('Técnico concluído');
-  if (filtroEtapa.value === 'encaminhado') filtroTexto.push('Encaminhado concluído');
-  if (filtroEtapa.value === 'movimentado') filtroTexto.push('Movimentado concluído');
-  
-  if (filtroTexto.length > 0) {
-    corpo += 'Filtros aplicados: ' + filtroTexto.join(', ') + '\n\n';
+closeTodayBtn.addEventListener('click', () => {
+  todayModal.style.display = 'none';
+  detalhesHojeContent.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+  if (e.target === todayModal) {
+    todayModal.style.display = 'none';
+    detalhesHojeContent.style.display = 'none';
   }
+});
+
+detalhesHojeBtn.addEventListener('click', () => {
+  const isVisible = detalhesHojeContent.style.display === 'block';
+  detalhesHojeContent.style.display = isVisible ? 'none' : 'block';
+  detalhesHojeBtn.textContent = isVisible ? 'Ver Detalhes' : 'Ocultar Detalhes';
+});
+
+function calculateTodayStats() {
+  const hoje = new Date();
+  const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
   
-  corpo += `Total de registros: ${cadastrosFiltrados.length}\n\n`;
-  corpo += '---\n\n';
+  let totalAgendamentos = 0;
+  let totalManha = 0;
+  let totalTarde = 0;
+  let agendamentosPorEtapa = {
+    psicologo: { manha: 0, tarde: 0 },
+    tecnico: { manha: 0, tarde: 0 }
+  };
   
-  cadastrosFiltrados.forEach(c => {
-    corpo += `Graduação: ${c.graduacao}\n`;
-    corpo += `RE: ${c.re}-${c.digito}\n`;
-    corpo += `Nome: ${c.nome}\n`;
-    corpo += `Email: ${c.email}\n`;
-    corpo += `WhatsApp: ${formatarTelefone(c.whatsapp || c.telefone)}\n`;
-    if (c.foneFixo) corpo += `Fone Fixo: ${formatarTelefone(c.foneFixo)}\n`;
-    corpo += `Unidade: ${c.unidade}\n`;
-    corpo += `Psicológico: ${getStatusText(c, 'psicologo')}\n`;
-    corpo += `Técnico: ${getStatusText(c, 'tecnico')}\n`;
-    corpo += `P/2: ${getStatusText(c, 'p2')}\n`;
-    corpo += `Encaminhado: ${c.encaminhadoData ? 'Sim' : 'Não'}\n`;
-    corpo += `Movimentado: ${c.movimentadoData ? 'Sim' : 'Não'}\n`;
-    corpo += '\n---\n\n';
+  todosOsCadastros.forEach(c => {
+    // Check psicologico appointments scheduled today
+    if (c.psicologoAgendadoEm) {
+      const agendadoEm = new Date(c.psicologoAgendadoEm);
+      if (agendadoEm >= inicioHoje && agendadoEm <= fimHoje) {
+        totalAgendamentos++;
+        if (c.psicologoHora) {
+          const hora = parseInt(c.psicologoHora.split(':')[0]);
+          if (hora < 12) {
+            totalManha++;
+            agendamentosPorEtapa.psicologo.manha++;
+          } else {
+            totalTarde++;
+            agendamentosPorEtapa.psicologo.tarde++;
+          }
+        }
+      }
+    }
+    
+    // Check tecnico appointments scheduled today
+    if (c.tecnicoAgendadoEm) {
+      const agendadoEm = new Date(c.tecnicoAgendadoEm);
+      if (agendadoEm >= inicioHoje && agendadoEm <= fimHoje) {
+        totalAgendamentos++;
+        if (c.tecnicoHora) {
+          const hora = parseInt(c.tecnicoHora.split(':')[0]);
+          if (hora < 12) {
+            totalManha++;
+            agendamentosPorEtapa.tecnico.manha++;
+          } else {
+            totalTarde++;
+            agendamentosPorEtapa.tecnico.tarde++;
+          }
+        }
+      }
+    }
   });
   
-  const assunto = encodeURIComponent('Relatório de Recrutamento');
-  const corpoEmail = encodeURIComponent(corpo);
+  totalHojeEl.textContent = totalAgendamentos;
   
-  window.location.href = `mailto:?subject=${assunto}&body=${corpoEmail}`;
+  let detalhesHTML = '<div style="padding:16px;background:#f3f4f6;border-radius:8px;margin-bottom:12px;">';
+  detalhesHTML += '<h4 style="margin-bottom:8px;">Período da Manhã (00:00 - 11:59)</h4>';
+  detalhesHTML += `<div style="font-size:24px;font-weight:700;color:#4299e1;margin-bottom:8px;">${totalManha}</div>`;
+  if (agendamentosPorEtapa.psicologo.manha > 0) {
+    detalhesHTML += `<div style="font-size:14px;color:#555;">Psicológico: ${agendamentosPorEtapa.psicologo.manha}</div>`;
+  }
+  if (agendamentosPorEtapa.tecnico.manha > 0) {
+    detalhesHTML += `<div style="font-size:14px;color:#555;">Técnico: ${agendamentosPorEtapa.tecnico.manha}</div>`;
+  }
+  detalhesHTML += '</div>';
+  
+  detalhesHTML += '<div style="padding:16px;background:#f3f4f6;border-radius:8px;">';
+  detalhesHTML += '<h4 style="margin-bottom:8px;">Período da Tarde (12:00 - 23:59)</h4>';
+  detalhesHTML += `<div style="font-size:24px;font-weight:700;color:#ed8936;margin-bottom:8px;">${totalTarde}</div>`;
+  if (agendamentosPorEtapa.psicologo.tarde > 0) {
+    detalhesHTML += `<div style="font-size:14px;color:#555;">Psicológico: ${agendamentosPorEtapa.psicologo.tarde}</div>`;
+  }
+  if (agendamentosPorEtapa.tecnico.tarde > 0) {
+    detalhesHTML += `<div style="font-size:14px;color:#555;">Técnico: ${agendamentosPorEtapa.tecnico.tarde}</div>`;
+  }
+  detalhesHTML += '</div>';
+  
+  detalhesHojeContent.innerHTML = detalhesHTML;
+}
+
+// Psic_Ag modal
+window.abrirAgendaPsic = () => {
+  updatePsicAgInfo();
+  psicAgModal.style.display = 'block';
+};
+
+closePsicAgBtn.addEventListener('click', () => {
+  psicAgModal.style.display = 'none';
 });
+
+window.addEventListener('click', (e) => {
+  if (e.target === psicAgModal) {
+    psicAgModal.style.display = 'none';
+  }
+});
+
+savePsicAgBtn.addEventListener('click', () => {
+  const dia = psicAgDiaSemana.value;
+  const manha = parseInt(psicAgVagasManha.value) || 0;
+  const tarde = parseInt(psicAgVagasTarde.value) || 0;
+  
+  psicAgVagas[`${dia}_manha`] = manha;
+  psicAgVagas[`${dia}_tarde`] = tarde;
+  
+  savePsicAgVagas();
+  updatePsicAgInfo();
+  alert('Vagas salvas com sucesso!');
+});
+
+function updatePsicAgInfo() {
+  let html = '';
+  const dias = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+  const diasNomes = {
+    segunda: 'Segunda-feira',
+    terca: 'Terça-feira',
+    quarta: 'Quarta-feira',
+    quinta: 'Quinta-feira',
+    sexta: 'Sexta-feira',
+    sabado: 'Sábado',
+    domingo: 'Domingo'
+  };
+  
+  dias.forEach(dia => {
+    const manha = psicAgVagas[`${dia}_manha`] || 0;
+    const tarde = psicAgVagas[`${dia}_tarde`] || 0;
+    
+    if (manha > 0 || tarde > 0) {
+      html += `<div style="margin-bottom:8px;">
+        <strong>${diasNomes[dia]}:</strong> Manhã: ${manha}, Tarde: ${tarde}
+      </div>`;
+    }
+  });
+  
+  if (!html) {
+    html = '<p style="color:#999;">Nenhuma vaga configurada</p>';
+  }
+  
+  psicAgInfoContent.innerHTML = html;
+}
 
 // Obter texto de status
 function getStatusText(cadastro, etapa) {
@@ -1781,6 +2202,7 @@ function getStatusText(cadastro, etapa) {
       if (typeof validadeStatus === 'number') return `Desfavorável (${validadeStatus} dias)`;
       return 'Desfavorável';
     }
+    if (resultado === 'faltou') return 'Faltou';
     return 'Agendado';
   } else if (etapa === 'tecnico') {
     const resultado = cadastro.resultadoTecnico || 'aguardando';

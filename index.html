@@ -39,6 +39,8 @@
           Total: <span id="totalCount">0</span>
         </div>
         <button id="adminBtn" class="btn-secondary" style="margin-right: 10px;">👤 Admin</button>
+        <button id="customizeBtn" class="btn-secondary" style="margin-right: 10px;">🎨 Personalizar</button>
+        <button id="lightModeBtn" class="btn-secondary" style="margin-right: 10px;">💡 Light</button>
         <button id="darkModeBtn" class="btn-secondary" style="margin-right: 10px;">🌙</button>
         <button id="logoutBtn" class="btn-secondary" style="margin-right: 10px;">🚪 Sair</button>
         <button id="newBtn" class="btn-primary">Novo Cadastro</button>
@@ -48,11 +50,25 @@
     <div class="filters">
       <div class="filter-group">
         <label>Graduação</label>
-        <select id="filtroGraduacao">
-          <option value="">Todos</option>
-          <option value="cb_sd">CB PM e SD PM</option>
-          <option value="sgt_subten">SGT PM e SUBTEN PM</option>
-        </select>
+        <div class="graduation-checkboxes">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+            <input type="checkbox" id="filtroSubtenSgt" value="subten_sgt">
+            Subten PM & Sgt PM
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+            <input type="checkbox" id="filtroCbSd" value="cb_sd">
+            Cb PM & Sd PM
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+            <input type="checkbox" id="filtroSd2cl" value="sd_2cl">
+            Sd PM 2cl
+          </label>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>Quantidade de Resultados</label>
+        <input type="number" id="resultLimit" placeholder="Todos" min="1">
       </div>
 
       <div class="filter-group">
@@ -96,7 +112,7 @@
 
       <div class="export-buttons">
         <button id="exportPdfBtn" class="btn-export">📄 Salvar PDF</button>
-        <button id="exportEmailBtn" class="btn-export">✉️ Compartilhar Email</button>
+        <button id="todayBtn" class="btn-export">📅 Hoje</button>
         <button id="deleteFilteredBtn" class="btn-delete-filtered">🗑️ Excluir</button>
       </div>
     </div>
@@ -140,6 +156,11 @@
           <div class="form-group">
             <label>Nome *</label>
             <input type="text" id="nome" required>
+          </div>
+
+          <div class="form-group">
+            <label>Indicação</label>
+            <input type="text" id="indicacao">
           </div>
 
           <div class="form-group">
@@ -187,6 +208,7 @@
                   <option value="">Selecione...</option>
                   <option value="favoravel">Favorável</option>
                   <option value="desfavoravel">Desfavorável</option>
+                  <option value="faltou">Faltou</option>
                 </select>
               </div>
               <div class="form-group">
@@ -383,7 +405,10 @@
         <span class="close-admin">&times;</span>
       </div>
       <div style="padding: 24px;">
-        <button id="newUserBtn" class="btn-primary" style="margin-bottom: 20px;">Novo Usuário</button>
+        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+          <button id="newUserBtn" class="btn-primary">Novo Usuário</button>
+          <button id="adminSettingsBtn" class="btn-secondary">⚙️ Configurações</button>
+        </div>
         
         <div id="usersList">
           <table style="width: 100%;">
@@ -515,6 +540,118 @@
             <div class="stat-fill" id="statMovimentado"></div>
           </div>
           <div class="stat-value" id="statMovimentadoValue">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Psic_Ag modal -->
+  <div id="psicAgModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h2>Gerenciar Vagas Psicológico</h2>
+        <span class="close-psic-ag">&times;</span>
+      </div>
+      <div style="padding:24px;">
+        <div class="form-group">
+          <label>Dia da Semana</label>
+          <select id="psicAgDiaSemana">
+            <option value="segunda">Segunda-feira</option>
+            <option value="terca">Terça-feira</option>
+            <option value="quarta">Quarta-feira</option>
+            <option value="quinta">Quinta-feira</option>
+            <option value="sexta">Sexta-feira</option>
+            <option value="sabado">Sábado</option>
+            <option value="domingo">Domingo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Vagas Manhã</label>
+          <input type="number" id="psicAgVagasManha" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>Vagas Tarde</label>
+          <input type="number" id="psicAgVagasTarde" min="0" value="0">
+        </div>
+        <div class="form-actions">
+          <button id="savePsicAgBtn" class="btn-primary">Salvar</button>
+        </div>
+        <div id="psicAgInfo" style="margin-top:16px;padding:12px;background:#f3f4f6;border-radius:8px;">
+          <h3 style="font-size:14px;margin-bottom:8px;">Vagas Disponíveis:</h3>
+          <div id="psicAgInfoContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's stats modal -->
+  <div id="todayModal" class="modal">
+    <div class="modal-content" style="max-width:600px;">
+      <div class="modal-header">
+        <h2>Agendamentos de Hoje</h2>
+        <span class="close-today">&times;</span>
+      </div>
+      <div style="padding:24px;">
+        <div style="margin-bottom:24px;">
+          <h3 style="font-size:16px;margin-bottom:12px;">Total de Agendamentos:</h3>
+          <div style="font-size:32px;font-weight:700;color:#2d3748;" id="totalHoje">0</div>
+        </div>
+        
+        <button id="detalhesHojeBtn" class="btn-primary" style="margin-bottom:16px;">Ver Detalhes</button>
+        
+        <div id="detalhesHojeContent" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customize modal -->
+  <div id="customizeModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h2>Personalização</h2>
+        <span class="close-customize">&times;</span>
+      </div>
+      <div style="padding:24px;">
+        <div class="form-group">
+          <label>Cor da Fonte</label>
+          <input type="color" id="customFontColor" value="#1a1a1a" style="width:100%;height:40px;">
+        </div>
+        <div class="form-group">
+          <label>Tamanho da Fonte (px)</label>
+          <input type="number" id="customFontSize" min="10" max="24" value="13" style="width:100%;">
+        </div>
+        <div class="form-group">
+          <label>Cor de Fundo</label>
+          <input type="color" id="customBgColor" value="#ffffff" style="width:100%;height:40px;">
+        </div>
+        <div class="form-actions">
+          <button id="resetCustomBtn" class="btn-secondary">Resetar</button>
+          <button id="applyCustomBtn" class="btn-primary">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Settings Modal -->
+  <div id="adminSettingsModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h2>Configurações do Sistema</h2>
+        <span class="close-admin-settings">&times;</span>
+      </div>
+      <div style="padding:24px;">
+        <div class="form-group">
+          <label>Validade Teste Psicológico Aprovado (dias)</label>
+          <input type="number" id="validadeAprovado" min="1" value="180" style="width:100%;">
+          <small>Número de dias que o teste psicológico aprovado permanece válido</small>
+        </div>
+        <div class="form-group">
+          <label>Prazo para Reteste após Reprovação (dias)</label>
+          <input type="number" id="validadeReprovado" min="1" value="180" style="width:100%;">
+          <small>Número de dias que o candidato reprovado deve aguardar para realizar novo teste</small>
+        </div>
+        <div class="form-actions">
+          <button id="saveAdminSettingsBtn" class="btn-primary">Salvar Configurações</button>
         </div>
       </div>
     </div>
